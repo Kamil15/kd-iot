@@ -15,7 +15,7 @@ struct Args {
 async fn main() {
     let args = Args::parse();
 
-    test_perp(args).await;
+    //test_perp(args).await;
     epd_waveshare_test();
 }
 
@@ -48,23 +48,22 @@ async fn test_perp(args: Args) -> Result<(), Box<dyn Error>> {
 
 fn epd_waveshare_test() {
     use ssd1680::prelude::*;
-    use epd_waveshare::{epd1in54::*, prelude::*};
-    let mut delay = rppal::hal::Delay::new();
+    // use epd_waveshare::{epd1in54::*, prelude::*};
     let gpio = rppal::gpio::Gpio::new().unwrap();
     
-    let mut spi = rppal::spi::Spi::new(rppal::spi::Bus::Spi0, rppal::spi::SlaveSelect::Ss0, 14, rppal::spi::Mode::Mode0).unwrap();
+    let mut spi = rppal::spi::Spi::new(rppal::spi::Bus::Spi0, rppal::spi::SlaveSelect::Ss0, 8_000_000, rppal::spi::Mode::Mode0).unwrap();
     let cs = gpio.get(26).unwrap().into_output();
     let busy = gpio.get(21).unwrap().into_input();
     let dc = gpio.get(16).unwrap().into_output();
     let rst = gpio.get(20).unwrap().into_output();
     
 
-    let mut ssd1680 = Ssd1680::new(&mut spi, cs, busy, dc, rst, &mut delay).unwrap();
+    let mut ssd1680 = Ssd1680::new(&mut spi, cs, busy, dc, rst, &mut rppal::hal::Delay).unwrap();
     ssd1680.clear_bw_frame(&mut spi).unwrap();
     let mut display_bw = Display2in13::bw();
-    display_bw.set_rotation(ssd1680::graphics::DisplayRotation::Rotate0);
+    display_bw.set_rotation(ssd1680::graphics::DisplayRotation::Rotate270);
 
-    draw_text(&mut display_bw, "XYZ", 12, 12);
+    draw_text(&mut display_bw, "XYZ", 0, 0);
 
     ssd1680.update_bw_frame(&mut spi, display_bw.buffer()).unwrap();
     ssd1680.display_frame(&mut spi, &mut rppal::hal::Delay).unwrap();
@@ -100,7 +99,7 @@ fn draw_text(display: &mut ssd1680::graphics::Display2in13, text: &str, x: i32, 
 
     let _ = embedded_graphics::fonts::Text::new(text, embedded_graphics::geometry::Point::new(x, y))
         .into_styled(embedded_graphics::text_style!(
-            font = embedded_graphics::fonts::Font6x8,
+            font = embedded_graphics::fonts::Font24x32,
             text_color = embedded_graphics::pixelcolor::BinaryColor::On,
             background_color = embedded_graphics::pixelcolor::BinaryColor::Off
         ))
