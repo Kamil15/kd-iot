@@ -234,6 +234,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c46c1a17ebeef917714db3ae9a17bd2184f7e9977d8e020c6c8bcf59a28a6f1b"
 
 [[package]]
+name = "dht-embedded"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "705d2ad6103a2910e4d4ec8d71978b2a575e0b7c84f0afedf74137c4c95501b9"
+dependencies = [
+ "embedded-hal 1.0.0-alpha.9",
+]
+
+[[package]]
 name = "embedded-graphics"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -379,6 +388,7 @@ dependencies = [
  "aht20",
  "bmp280",
  "clap",
+ "dht-embedded",
  "embedded-graphics",
  "epd-waveshare",
  "rppal",
