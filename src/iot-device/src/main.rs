@@ -53,10 +53,10 @@ fn epd_waveshare_test() {
     let gpio = rppal::gpio::Gpio::new().unwrap();
     
     let mut spi = rppal::spi::Spi::new(rppal::spi::Bus::Spi0, rppal::spi::SlaveSelect::Ss0, 14, rppal::spi::Mode::Mode0).unwrap();
-    let cs = gpio.get(17).unwrap().into_output();
-    let busy = gpio.get(17).unwrap().into_input();
-    let dc = gpio.get(17).unwrap().into_output();
-    let rst = gpio.get(17).unwrap().into_output();
+    let cs = gpio.get(26).unwrap().into_output();
+    let busy = gpio.get(21).unwrap().into_input();
+    let dc = gpio.get(16).unwrap().into_output();
+    let rst = gpio.get(20).unwrap().into_output();
     
 
     let mut ssd1680 = Ssd1680::new(&mut spi, cs, busy, dc, rst, &mut delay).unwrap();
