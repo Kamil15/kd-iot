@@ -64,7 +64,7 @@ fn epd_waveshare_test() {
     let mut display_bw = Display2in13::bw();
     display_bw.set_rotation(ssd1680::graphics::DisplayRotation::Rotate0);
 
-    draw_text(&mut display_bw, "OwO", 12, 12);
+    draw_text(&mut display_bw, "XYZ", 12, 12);
 
     ssd1680.update_bw_frame(&mut spi, display_bw.buffer()).unwrap();
     ssd1680.display_frame(&mut spi, &mut rppal::hal::Delay).unwrap();
