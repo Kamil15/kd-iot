@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package mqttmsg.items;
+
+message IoTCommand {
+    enum Cmd {
+        Check = 0;
+        Uncheck = 1;
+        Switch = 2;
+    }
+
+    Cmd CMD = 1;
+    optional string Body = 2;
+    
+}
+
+message IoTTelemetry {
+    optional string Body = 1;
+}
+
+message SampleMessage {
+  oneof test_oneof {
+    string name = 4;
+    string sub_message = 9;
+  }
+}

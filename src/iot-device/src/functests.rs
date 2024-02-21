@@ -1,10 +1,10 @@
-use std::{fs, time::Duration, error::Error};
+use std::{time::Duration, error::Error};
 
-use rumqttc::{MqttOptions, Transport, TlsConfiguration, AsyncClient, QoS};
+use rumqttc::*;
 
 use crate::Args;
 
-async fn test_dht22(args: Args) -> Result<(), Box<dyn Error>> {
+async fn test_dht22() -> Result<(), Box<dyn Error>> {
     use dht_embedded::{Dht22, DhtSensor, NoopInterruptControl};
     let gpio = rppal::gpio::Gpio::new().unwrap();
     let pin = gpio.get(4)?.into_io(rppal::gpio::Mode::Output);
@@ -19,13 +19,12 @@ async fn test_dht22(args: Args) -> Result<(), Box<dyn Error>> {
         tokio::time::sleep(Duration::from_millis(2100)).await;
     }
     
-    Ok(())
+    //Ok(())
 }
 
-async fn test_i2c(args: Args) -> Result<(), Box<dyn Error>> {
-    let mut mock_delay = rppal::hal::Delay::new();
-
-    let mut i2c = rppal::i2c::I2c::new()?;
+async fn test_i2c() -> Result<(), Box<dyn Error>> {
+    let i2c = rppal::i2c::I2c::new()?;
+    //let mut mock_delay = rppal::hal::Delay::new();
     //let mut aht20_uninit = aht20_driver::AHT20::new(i2c, aht20_driver::SENSOR_ADDRESS);
     //let mut aht20 = aht20_uninit.init(&mut mock_delay).unwrap();
     //let measurement = aht20.measure(&mut mock_delay).unwrap();
@@ -49,6 +48,7 @@ async fn test_i2c(args: Args) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/*
 fn ssd1680_test() {
     use ssd1680::prelude::*;
     // use epd_waveshare::{epd1in54::*, prelude::*};
@@ -76,31 +76,6 @@ fn ssd1680_test() {
     ssd1680.display_frame(&mut spi, &mut rppal::hal::Delay).unwrap();
 
 }
-
-async fn mqtt_load(args: Args) {
-    let ca: Vec<u8> = fs::read("ca_certificate.pem")
-        .expect("Something went wrong reading certificate!");
-    let mut mqttoptions = MqttOptions::new(args.id, "localhost", 8883);
-    mqttoptions.set_transport(Transport::Tls(TlsConfiguration::Simple {
-        ca: ca,
-        alpn: None,
-        client_auth: None,
-    }));
-    mqttoptions.set_credentials("iotdevice", "IttrulyisanioTdevice");
-    mqttoptions
-        .set_keep_alive(Duration::from_secs(5))
-        .set_pending_throttle(Duration::from_secs(2));
-
-    let (mut client, mut connection) = AsyncClient::new(mqttoptions, 10);
-    client.publish("ServerRoute", QoS::AtLeastOnce, false, "My Text").await.unwrap();
-    
-    // Iterate to poll the eventloop for connection progress
-    loop {
-        let notification = connection.poll().await.unwrap();
-        println!("Notification = {:?}", notification);
-    }
-}
-
 fn draw_text(display: &mut ssd1680::graphics::Display2in13, text: &str, x: i32, y: i32) {
     use embedded_graphics::prelude::*;
     use embedded_graphics::fonts::*;
@@ -115,4 +90,30 @@ fn draw_text(display: &mut ssd1680::graphics::Display2in13, text: &str, x: i32, 
             background_color = BinaryColor::Off
         ))
         .draw(display);
+}  */
+
+async fn mqtt_load(args: Args) {
+    let mut mqttoptions = MqttOptions::new(args.id_device, "localhost", 8883);
+
+    /* let ca: Vec<u8> = fs::read("ca_certificate.pem")
+        .expect("Something went wrong reading certificate!");
+    mqttoptions.set_transport(Transport::Tls(TlsConfiguration::Simple {
+        ca: ca,
+        alpn: None,
+        client_auth: None,
+    })); */
+
+    mqttoptions.set_credentials("iotdevice", "IttrulyisanioTdevice");
+    mqttoptions
+        .set_keep_alive(Duration::from_secs(5))
+        .set_pending_throttle(Duration::from_secs(2));
+
+    let (mut client, mut connection) = AsyncClient::new(mqttoptions, 10);
+    client.publish("ServerRoute", QoS::AtLeastOnce, false, "My Text").await.unwrap();
+    
+    // Iterate to poll the eventloop for connection progress
+    loop {
+        let notification = connection.poll().await.unwrap();
+        println!("Notification = {:?}", notification);
+    }
 }
