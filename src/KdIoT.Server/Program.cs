@@ -18,4 +18,7 @@ if (app.Environment.IsDevelopment()) {
     app.UseSwaggerUI();
 }
 
+var a = new GrpcGreeter.HelloRequest {Name = " awa"};
+
+
 app.Run();
