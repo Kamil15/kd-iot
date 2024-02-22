@@ -92,8 +92,8 @@ fn draw_text(display: &mut ssd1680::graphics::Display2in13, text: &str, x: i32, 
         .draw(display);
 }  */
 
-async fn mqtt_load(args: Args) {
-    let mut mqttoptions = MqttOptions::new(args.id_device, "localhost", 8883);
+pub async fn mqtt_load(args: Args) {
+    let mut mqttoptions = MqttOptions::new(args.id_device, "localhost", 1883);
 
     /* let ca: Vec<u8> = fs::read("ca_certificate.pem")
         .expect("Something went wrong reading certificate!");
@@ -103,7 +103,7 @@ async fn mqtt_load(args: Args) {
         client_auth: None,
     })); */
 
-    mqttoptions.set_credentials("iotdevice", "IttrulyisanioTdevice");
+    mqttoptions.set_credentials("theserver", "myserverpass");
     mqttoptions
         .set_keep_alive(Duration::from_secs(5))
         .set_pending_throttle(Duration::from_secs(2));
@@ -113,7 +113,8 @@ async fn mqtt_load(args: Args) {
     
     // Iterate to poll the eventloop for connection progress
     loop {
-        let notification = connection.poll().await.unwrap();
-        println!("Notification = {:?}", notification);
+        if let Ok(notification) = connection.poll().await {
+            println!("Notification = {:?}", notification);
+        }
     }
 }

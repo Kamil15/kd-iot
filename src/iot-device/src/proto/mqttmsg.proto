@@ -1,8 +1,9 @@
 syntax = "proto3";
 
-package mqttmsg.items;
+package mqttmsg.messages;
+option csharp_namespace = "MQQTMsg.Messages";
 
-message IoTCommand {
+message ServerMessage {
     enum Cmd {
         Check = 0;
         Uncheck = 1;
@@ -14,7 +15,7 @@ message IoTCommand {
     
 }
 
-message IoTTelemetry {
+message IoTMessage {
     optional string Body = 1;
 }
 
