@@ -17,8 +17,8 @@ namespace KdIoT.Server.Services {
             _logger = logger;
             _factory = new ConnectionFactory {
                 HostName = "rabbitmq",
-                UserName = "iotdevice",
-                Password = "IttrulyisanioTdevice",
+                UserName = "theserver",
+                Password = "myserverpass",
                 DispatchConsumersAsync = true
                 //Port = 5671
             };
@@ -41,7 +41,7 @@ namespace KdIoT.Server.Services {
                      arguments: null);
 
             _consumer = new AsyncEventingBasicConsumer(_channel);
-            _consumer.Received += Recived;
+            _consumer.Received += MessageRecived;
             _channel.QueueBind("ServerQueue", "amq.topic", "ServerRoute");
             _channel.BasicConsume(queue: "ServerQueue",
                                      autoAck: true,
@@ -50,11 +50,12 @@ namespace KdIoT.Server.Services {
             var task = Task.Run(async () => await DoWork(_taskstoppingTokenSource.Token).ConfigureAwait(false)).ConfigureAwait(false);
         }
 
-        private async Task Recived(object model, BasicDeliverEventArgs ea) {
+        private async Task MessageRecived(object model, BasicDeliverEventArgs ea) {
             
             var body = ea.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
-            _logger.LogInformation($" [x] Received {message}, ea.ConsumerTag: {ea.ConsumerTag}, ea.Exchange: {ea.Exchange}");
+            _logger.LogInformation($" [x] [Body:] {message}, [ea.DeliveryTag:] {ea.DeliveryTag}, [ea.ConsumerTag:] {ea.ConsumerTag}, [ea.Exchange:] {ea.Exchange}");
+            _logger.LogInformation($" [x] [ea.Redelivered:] {ea.Redelivered}, [ea.RoutingKey:] {ea.RoutingKey}, [ea.BasicProperties.UserId:] {ea.BasicProperties.ReplyTo}");
         }
 
         private async Task DoWork(CancellationToken stoppingToken) {

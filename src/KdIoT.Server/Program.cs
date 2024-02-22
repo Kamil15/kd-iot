@@ -18,7 +18,9 @@ if (app.Environment.IsDevelopment()) {
     app.UseSwaggerUI();
 }
 
-var a = new GrpcGreeter.HelloRequest {Name = " awa"};
+var folder = Environment.SpecialFolder.LocalApplicationData;
+var path = Environment.GetFolderPath(folder);
 
+Console.WriteLine($"{path}"); // /home/kamil/.local/share
 
 app.Run();

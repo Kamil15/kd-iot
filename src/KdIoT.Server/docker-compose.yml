@@ -7,7 +7,9 @@ services:
       - ./rabbitmq-etc:/etc/rabbitmq
     ports:
       - 5671:5671
+      - 5672:5672
       - 8883:8883
+      - 1883:1883
       - 127.0.0.1:15672:15672
 
   iotserver:

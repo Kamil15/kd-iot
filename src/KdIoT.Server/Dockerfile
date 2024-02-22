@@ -16,6 +16,6 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /App
 COPY --from=build-env /App/out .
 
-COPY rabbitmq-etc/ca_certificate.pem /usr/local/share/ca-certificates/ca_certificate.pem
-RUN update-ca-certificates
+# COPY rabbitmq-etc/ca_certificate.pem /usr/local/share/ca-certificates/ca_certificate.pem
+# RUN update-ca-certificates
 ENTRYPOINT ["dotnet", "KdIoT.Server.dll"]
