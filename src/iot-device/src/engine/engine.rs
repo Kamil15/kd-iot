@@ -1,38 +1,60 @@
-use std::{borrow::BorrowMut, error::Error};
+use std::{borrow::BorrowMut, error::Error, time::Duration};
 
-use rppal::gpio::Gpio;
+use bmp280::Bmp280;
+use rppal::{gpio::Gpio, hal::Delay, i2c::I2c};
 
-use super::{net_connector::NetConnector, ResultTable};
+use super::{net_connector::NetConnector, ProgramArgs, ResultTable};
 
 pub struct Engine {
+    args: ProgramArgs,
     dht22_fs_temp: String,
     dht22_fs_humidity: String,
     net_connector: Option<NetConnector>,
+    aht20: aht20::Aht20<I2c, Delay>,
+    bmp280: Bmp280,
     result_table: ResultTable,
 }
 
 impl Engine {
-    async fn run(&mut self) {
-        self.dht22_fs_temp = "/sys/bus/iio/devices/iio:device0/in_temp_input".to_string();
-        self.dht22_fs_humidity =
+    fn new(args: ProgramArgs) -> Engine {
+        let dht22_fs_temp = "/sys/bus/iio/devices/iio:device0/in_temp_input".to_string();
+        let dht22_fs_humidity =
             "/sys/bus/iio/devices/iio:device0/in_humidityrelative_input".to_string();
+        let net_connector = None;
+        let result_table = ResultTable::default();
 
-        self.net_connector = Some(NetConnector::connect().await);
-        self.poll_net().await;
+        let i2c = rppal::i2c::I2c::new().unwrap();
+        let aht20 = aht20::Aht20::new(i2c, rppal::hal::Delay).unwrap();
+        let bmp280 = bmp280::Bmp280Builder::new()
+            .address(0x20) // Optional
+            .path("/dev/i2c-1") // Optional
+            .build()
+            .expect("Could not build device");
+
+        Engine {
+            args,
+            dht22_fs_temp,
+            dht22_fs_humidity,
+            net_connector,
+            aht20,
+            bmp280,
+            result_table,
+        }
+    }
+    async fn start_backgrund_tasks(&mut self) {
+        self.net_connector = Some(NetConnector::start_thread(self.args.clone()).await);
+    }
+
+    async fn run(&mut self) {
+        
 
         loop {
+            tokio::time::sleep(Duration::from_secs(5)).await; //temp
             self.get_dht22();
             let _ = self.get_aht20();
             let _ = self.get_bmp280();
-
-            self.poll_net().await;
+            self.net_connector.as_ref().unwrap().send_data(self.result_table.clone()).await;
         }
-    }
-
-    /// poll when net_connector exists
-    async fn poll_net(&mut self) -> Option<()> {
-        self.net_connector.as_mut()?.poll().await;
-        None
     }
 
     pub fn get_dht22(&mut self) {
@@ -54,10 +76,7 @@ impl Engine {
     }
 
     pub fn get_aht20(&mut self) -> Result<(), aht20::Error<rppal::i2c::Error>> {
-        let i2c = rppal::i2c::I2c::new()?;
-
-        let mut aht20 = aht20::Aht20::new(i2c, rppal::hal::Delay)?;
-        let (h, t) = aht20.read()?;
+        let (h, t) = self.aht20.read()?;
         self.result_table.aht20_temp = t.celsius();
         self.result_table.aht20_humidity = h.rh();
 
@@ -65,14 +84,8 @@ impl Engine {
     }
 
     pub fn get_bmp280(&mut self) -> Result<(), Box<dyn Error>> {
-        let mut bmp280 = bmp280::Bmp280Builder::new()
-            .address(0x20) // Optional
-            .path("/dev/i2c-1") // Optional
-            .build()
-            .expect("Could not build device");
-
-        self.result_table.bmp280_temp = bmp280.temperature_celsius()?;
-        self.result_table.bmp280_pressure = bmp280.pressure_kpa()?;
+        self.result_table.bmp280_temp = self.bmp280.temperature_celsius()?;
+        self.result_table.bmp280_pressure = self.bmp280.pressure_kpa()?;
 
         Ok(())
     }

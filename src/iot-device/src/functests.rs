@@ -2,7 +2,7 @@ use std::{time::Duration, error::Error};
 
 use rumqttc::*;
 
-use crate::Args;
+use crate::ProgramArgs;
 
 async fn test_dht22() -> Result<(), Box<dyn Error>> {
     use dht_embedded::{Dht22, DhtSensor, NoopInterruptControl};
@@ -92,7 +92,7 @@ fn draw_text(display: &mut ssd1680::graphics::Display2in13, text: &str, x: i32, 
         .draw(display);
 }  */
 
-pub async fn mqtt_load(args: Args) {
+pub async fn mqtt_load(args: ProgramArgs) {
     let mut mqttoptions = MqttOptions::new(args.id_device, "localhost", 1883);
 
     /* let ca: Vec<u8> = fs::read("ca_certificate.pem")

@@ -1,3 +1,5 @@
+use clap::Parser;
+
 pub mod spidisplay;
 pub mod net_connector;
 pub mod engine;
@@ -13,4 +15,14 @@ pub struct ResultTable {
 
     pub bmp280_temp: f32, //celsius
     pub bmp280_pressure: f32, //kpa
+}
+
+#[derive(Parser, Debug, Clone)]
+pub struct ProgramArgs {
+    #[arg(short, long, default_value = "air")]
+    pub id_device: String,
+    #[arg(long, default_value = "localhost")]
+    pub hostname_mqqt: String,
+    #[arg(short, long, default_value_t = 1883)]
+    pub port_mqqt: u16,
 }
