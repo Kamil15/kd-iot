@@ -11,12 +11,12 @@ message ServerMessage {
     }
 
     Cmd CMD = 1;
-    optional string Body = 2;
+    string Body = 2;
     
 }
 
 message IoTMessage {
-    optional string Body = 1;
+    string Body = 1;
 }
 
 message SampleMessage {
