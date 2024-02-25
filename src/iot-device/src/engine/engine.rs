@@ -26,7 +26,7 @@ impl Engine {
         let i2c = rppal::i2c::I2c::new().unwrap();
         let aht20 = aht20::Aht20::new(i2c, rppal::hal::Delay).unwrap();
         let bmp280 = bmp280::Bmp280Builder::new()
-            .address(0x20) // Optional
+            .address(0x77) // Optional
             .path("/dev/i2c-1") // Optional
             .build()
             .expect("Could not build device");

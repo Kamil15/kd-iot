@@ -148,6 +148,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "byte-slice-cast"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0a5e3906bcbf133e33c1d4d95afc664ad37fbdb9f6568d8043e7ea8c27d93d3"
+
+[[package]]
 name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -249,12 +255,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c46c1a17ebeef917714db3ae9a17bd2184f7e9977d8e020c6c8bcf59a28a6f1b"
 
 [[package]]
-name = "dht-embedded"
+name = "display-interface"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7517c040926d7b02b111884aa089177db80878533127f7c1b480d852c5fb4112"
+
+[[package]]
+name = "display-interface-i2c"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5215d967f680524bc2a4a75c3e0f43d18d663e9d952dbcfe1bba86f43fb2584"
+checksum = "4895cd4e54e5536ef370d7f1eec787aad8275dd8ad15815aebfa71dd847b4ebf"
 dependencies = [
- "embedded-hal 1.0.0",
+ "display-interface",
+ "embedded-hal 0.2.7",
+]
+
+[[package]]
+name = "display-interface-spi"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "489378ad054862146fbd1f09f51d585ccbe4bd1e2feadcda2a13ac33f840e1a5"
+dependencies = [
+ "byte-slice-cast",
+ "display-interface",
+ "embedded-hal 0.2.7",
 ]
 
 [[package]]
@@ -464,13 +488,13 @@ dependencies = [
  "aht20",
  "bmp280",
  "clap",
- "dht-embedded",
  "embedded-graphics",
  "prost",
  "prost-build",
  "rppal",
  "rumqttc",
  "sh1106",
+ "ssd1306",
  "tokio",
 ]
 
@@ -977,6 +1001,19 @@ checksum = "cafa7900db085f4354dbc7025e25d7a839a14360ea13b5fc4fd717f2d3b23134"
 dependencies = [
  "once_cell",
  "winapi",
+]
+
+[[package]]
+name = "ssd1306"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b37918f6137f2b58427181c3e10a731bef1061a9756b13ffbade64f21892acc6"
+dependencies = [
+ "display-interface",
+ "display-interface-i2c",
+ "display-interface-spi",
+ "embedded-graphics-core",
+ "embedded-hal 0.2.7",
 ]
 
 [[package]]

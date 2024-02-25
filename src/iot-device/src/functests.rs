@@ -4,7 +4,7 @@ use rumqttc::*;
 
 use crate::ProgramArgs;
 
-async fn test_dht22() -> Result<(), Box<dyn Error>> {
+/* async fn test_dht22() -> Result<(), Box<dyn Error>> {
     use dht_embedded::{Dht22, DhtSensor, NoopInterruptControl};
     let gpio = rppal::gpio::Gpio::new().unwrap();
     let pin = gpio.get(4)?.into_io(rppal::gpio::Mode::Output);
@@ -20,9 +20,9 @@ async fn test_dht22() -> Result<(), Box<dyn Error>> {
     }
     
     //Ok(())
-}
+} */
 
-async fn test_i2c() -> Result<(), Box<dyn Error>> {
+pub async fn test_i2c() -> Result<(), Box<dyn Error>> {
     let i2c = rppal::i2c::I2c::new()?;
     //let mut mock_delay = rppal::hal::Delay::new();
     //let mut aht20_uninit = aht20_driver::AHT20::new(i2c, aht20_driver::SENSOR_ADDRESS);
@@ -37,7 +37,7 @@ async fn test_i2c() -> Result<(), Box<dyn Error>> {
     println!("humidity (aht20): {:.2}%", h.rh());
 
     let mut bmp280 = bmp280::Bmp280Builder::new()
-        .address(0x20) // Optional
+        .address(0x77) // Optional
         .path("/dev/i2c-1") // Optional
         .build().expect("Could not build device");
 
@@ -117,4 +117,54 @@ pub async fn mqtt_load(args: ProgramArgs) {
             println!("Notification = {:?}", notification);
         }
     }
+}
+
+
+pub fn test_ssd1306() {
+    use ssd1306::prelude::*;
+    use ssd1306::Ssd1306;
+    use embedded_graphics::mono_font::MonoTextStyleBuilder;
+    use embedded_graphics::prelude::*;
+    use embedded_graphics::mono_font::ascii::FONT_6X10;
+    use embedded_graphics::pixelcolor::BinaryColor;
+    use embedded_graphics::text::Text;
+    use embedded_graphics::text::Baseline;
+
+    let gpio = rppal::gpio::Gpio::new().unwrap();
+
+    let spi = rppal::spi::Spi::new(
+        rppal::spi::Bus::Spi0,
+        rppal::spi::SlaveSelect::Ss0,
+        1_000_000,
+        rppal::spi::Mode::Mode0, //Mode0
+    )
+    .unwrap();
+
+    //let cs = gpio.get(12).unwrap().into_output(); //26
+    let dc = gpio.get(16).unwrap().into_output();
+
+    let interface = SPIInterfaceNoCS::new(spi, dc);
+    let mut display = Ssd1306::new(
+        interface,
+        DisplaySize128x64,
+        DisplayRotation::Rotate0,
+    ).into_buffered_graphics_mode();
+    display.init().unwrap();
+    
+    let text_style = MonoTextStyleBuilder::new()
+        .font(&FONT_6X10)
+        .text_color(BinaryColor::On)
+        .build();
+    
+    Text::with_baseline("Hello world!", Point::zero(), text_style, Baseline::Top)
+        .draw(&mut display)
+        .unwrap();
+    
+    Text::with_baseline("Hello Rust!", Point::new(0, 16), text_style, Baseline::Top)
+        .draw(&mut display)
+        .unwrap();
+    
+    display.set_pixel(1, 1, true);
+    display.flush().unwrap();
+    println!("Done! 8");
 }
