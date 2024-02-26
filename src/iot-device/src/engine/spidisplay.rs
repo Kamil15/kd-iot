@@ -1,73 +1,63 @@
-use std::convert::Infallible;
-
-use embedded_graphics::mono_font::iso_8859_2::FONT_10X20;
-use embedded_graphics::mono_font::iso_8859_2::FONT_6X10;
-use embedded_graphics::mono_font::MonoTextStyle;
-use embedded_graphics::mono_font::MonoTextStyleBuilder;
-use embedded_graphics::pixelcolor::BinaryColor;
-use embedded_graphics::pixelcolor::Rgb565;
+use embedded_graphics::fonts::*;
+use embedded_graphics::pixelcolor::*;
 use embedded_graphics::prelude::*;
-use embedded_graphics::text::Baseline;
-use embedded_graphics::text::Text;
 use rppal::gpio::InputPin;
 use rppal::gpio::OutputPin;
 use rppal::spi::Spi;
-//use ssd1680::prelude::*;
-use sh1106::prelude::*;
-use sh1106::NoOutputPin;
+use ssd1680::prelude::*;
 
-use super::ResultTable;
-
-pub struct SpiDisplay {
-    display: GraphicsMode<SpiInterface<Spi, OutputPin, OutputPin>>,
-    rst: OutputPin,
+struct SpiDisplay {
+    spi: Spi,
+    ssd1680: Ssd1680<Spi, OutputPin, InputPin, OutputPin, OutputPin>,
 }
 
 impl SpiDisplay {
-    pub fn new() -> Self {
+    fn new() -> Self {
         let gpio = rppal::gpio::Gpio::new().unwrap();
 
-        let spi = rppal::spi::Spi::new(
+        let mut spi = rppal::spi::Spi::new(
             rppal::spi::Bus::Spi0,
             rppal::spi::SlaveSelect::Ss0,
             8_000_000,
-            rppal::spi::Mode::Mode0, //Mode0
+            rppal::spi::Mode::Mode0,
         )
         .unwrap();
-        let cs = gpio.get(12).unwrap().into_output(); //26
-        //let cs = sh1106::builder::NoOutputPin::new();
+        let cs = gpio.get(26).unwrap().into_output();
+        let busy = gpio.get(21).unwrap().into_input();
         let dc = gpio.get(16).unwrap().into_output();
         let rst = gpio.get(20).unwrap().into_output();
 
-        let mut display: GraphicsMode<_> = sh1106::Builder::new().connect_spi(spi, dc, cs).into();
+        let mut ssd1680 =
+            Ssd1680::new(&mut spi, cs, busy, dc, rst, &mut rppal::hal::Delay).unwrap();
 
-        display.init().unwrap();
-        display.flush().unwrap();
-
-        Self { display, rst }
+        Self { spi, ssd1680 }
     }
 
-    pub fn update(&mut self, result_table: ResultTable) {
-        //self.display.init().unwrap();
+    fn update(&mut self) {
+        self.ssd1680.clear_bw_frame(&mut self.spi).unwrap();
+        let mut display_bw = Display2in13::bw();
 
-        // Create a new character style
-        let text_style = MonoTextStyleBuilder::new()
-            .font(&FONT_10X20)
-            .text_color(BinaryColor::On)
-            .build();
-        // let style = MonoTextStyle::new(&FONT_10X20, embedded_graphics::pixelcolor::BinaryColor::On);
+        display_bw.set_rotation(ssd1680::graphics::DisplayRotation::Rotate270);
 
-        // Create a text at position (20, 30) and draw it using the previously defined style
-        Text::with_baseline("Hello world!", Point::zero(), text_style, Baseline::Top)
-            .draw(&mut self.display)
+        let text = "a".encode_utf16();
+
+        draw_text(&mut display_bw, "Dzien dobry.", 0, 0);
+
+        self.ssd1680
+            .update_bw_frame(&mut self.spi, display_bw.buffer())
             .unwrap();
-
-        Text::with_baseline("Hello Rust!", Point::new(0, 16), text_style, Baseline::Top)
-            .draw(&mut self.display)
+        self.ssd1680
+            .display_frame(&mut self.spi, &mut rppal::hal::Delay)
             .unwrap();
-
-        self.display.flush().unwrap();
-        
-        println!("Updated6");
     }
+}
+
+fn draw_text(display: &mut ssd1680::graphics::Display2in13, text: &str, x: i32, y: i32) {
+    let _ = Text::new(text, Point::new(x, y))
+        .into_styled(embedded_graphics::text_style!(
+            font = Font12x16,
+            text_color = BinaryColor::On,
+            background_color = BinaryColor::Off
+        ))
+        .draw(display);
 }

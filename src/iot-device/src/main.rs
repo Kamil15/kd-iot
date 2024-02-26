@@ -5,7 +5,6 @@ use std::time::Duration;
 use clap::{Parser, arg};
 
 use engine::ProgramArgs;
-use engine::spidisplay::SpiDisplay;
 
 use crate::engine::ResultTable;
 
@@ -19,6 +18,6 @@ async fn main() {
     //println!("{:?}", 2_000_000);
     //let mut disp = SpiDisplay::new();
     //disp.update(ResultTable::default());
-    functests::test_ssd1306();
+    functests::ssd1680_test();
     loop {}
 }

@@ -48,8 +48,8 @@ pub async fn test_i2c() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/*
-fn ssd1680_test() {
+
+pub fn ssd1680_test() {
     use ssd1680::prelude::*;
     // use epd_waveshare::{epd1in54::*, prelude::*};
     let gpio = rppal::gpio::Gpio::new().unwrap();
@@ -69,7 +69,7 @@ fn ssd1680_test() {
 
     let text = "a".encode_utf16();
 
-    draw_text(&mut display_bw, "Dzien dobry.", 0, 0);
+    draw_text(&mut display_bw, "Test Pierwotny.", 0, 0);
     
 
     ssd1680.update_bw_frame(&mut spi, display_bw.buffer()).unwrap();
@@ -90,7 +90,7 @@ fn draw_text(display: &mut ssd1680::graphics::Display2in13, text: &str, x: i32, 
             background_color = BinaryColor::Off
         ))
         .draw(display);
-}  */
+}
 
 pub async fn mqtt_load(args: ProgramArgs) {
     let mut mqttoptions = MqttOptions::new(args.id_device, "localhost", 1883);
@@ -119,7 +119,7 @@ pub async fn mqtt_load(args: ProgramArgs) {
     }
 }
 
-
+/*
 pub fn test_ssd1306() {
     use ssd1306::prelude::*;
     use ssd1306::Ssd1306;
@@ -167,4 +167,4 @@ pub fn test_ssd1306() {
     display.set_pixel(1, 1, true);
     display.flush().unwrap();
     println!("Done! 8");
-}
+}*/
