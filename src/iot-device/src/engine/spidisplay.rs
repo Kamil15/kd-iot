@@ -6,6 +6,8 @@ use rppal::gpio::OutputPin;
 use rppal::spi::Spi;
 use ssd1680::prelude::*;
 
+use super::ResultTable;
+
 struct SpiDisplay {
     spi: Spi,
     ssd1680: Ssd1680<Spi, OutputPin, InputPin, OutputPin, OutputPin>,
@@ -33,15 +35,18 @@ impl SpiDisplay {
         Self { spi, ssd1680 }
     }
 
-    fn update(&mut self) {
+    fn update(&mut self, result_table: ResultTable) {
         self.ssd1680.clear_bw_frame(&mut self.spi).unwrap();
         let mut display_bw = Display2in13::bw();
 
         display_bw.set_rotation(ssd1680::graphics::DisplayRotation::Rotate270);
 
-        let text = "a".encode_utf16();
-
         draw_text(&mut display_bw, "Dzien dobry.", 0, 0);
+
+
+        
+
+
 
         self.ssd1680
             .update_bw_frame(&mut self.spi, display_bw.buffer())

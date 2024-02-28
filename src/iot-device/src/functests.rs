@@ -24,17 +24,17 @@ use crate::ProgramArgs;
 
 pub async fn test_i2c() -> Result<(), Box<dyn Error>> {
     let i2c = rppal::i2c::I2c::new()?;
-    //let mut mock_delay = rppal::hal::Delay::new();
-    //let mut aht20_uninit = aht20_driver::AHT20::new(i2c, aht20_driver::SENSOR_ADDRESS);
-    //let mut aht20 = aht20_uninit.init(&mut mock_delay).unwrap();
-    //let measurement = aht20.measure(&mut mock_delay).unwrap();
-    //println!("temperature (aht20): {:.2}C", measurement.temperature);
-    //println!("humidity (aht20): {:.2}%", measurement.humidity);
 
-    let mut aht = aht20::Aht20::new(i2c, rppal::hal::Delay).unwrap();
+    /*let mut aht = aht20::Aht20::new(i2c, rppal::hal::Delay).unwrap();
+    aht.read().unwrap();
     let (h, t) = aht.read().unwrap();
     println!("temperature (aht20): {:.2}C", t.celsius());
-    println!("humidity (aht20): {:.2}%", h.rh());
+    println!("humidity (aht20): {:.2}%", h.rh());*/
+
+    let mut aht = embedded_aht20::Aht20::new(i2c, embedded_aht20::DEFAULT_I2C_ADDRESS, rppal::hal::Delay).unwrap();
+    let measure = aht.measure().unwrap();
+    
+    println!("Temperature: {:.2} °C, Relative humidity: {:.2} %", measure.temperature.celcius(), measure.relative_humidity);
 
     let mut bmp280 = bmp280::Bmp280Builder::new()
         .address(0x77) // Optional
@@ -44,6 +44,17 @@ pub async fn test_i2c() -> Result<(), Box<dyn Error>> {
         println!("temperature (bmp280): {:.2}C", bmp280.temperature_celsius()?);
         println!("pressure_kpa (bmp280): {:.2}%", bmp280.pressure_kpa()?);
 
+
+    Ok(())
+}
+
+pub async fn embedded_aht20() -> Result<(), Box<dyn Error>> {
+    let i2c = rppal::i2c::I2c::new()?;
+
+    let mut aht = embedded_aht20::Aht20::new(i2c, embedded_aht20::DEFAULT_I2C_ADDRESS, rppal::hal::Delay).unwrap();
+    let measure = aht.measure().unwrap();
+    
+    println!("Temperature: {:.2} °C, Relative humidity: {:.2} %", measure.temperature.celcius(), measure.relative_humidity);
 
     Ok(())
 }

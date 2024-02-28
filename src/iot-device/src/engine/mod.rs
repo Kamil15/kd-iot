@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use clap::Parser;
 
 pub mod spidisplay;
@@ -16,6 +18,31 @@ pub struct ResultTable {
     pub bmp280_temp: f32, //celsius
     pub bmp280_pressure: f32, //kpa
 }
+
+pub struct EnterTimerGuard {
+    interval: Duration,
+    last_enter: Instant,
+}
+
+impl EnterTimerGuard {
+    pub fn new(interval: Duration) -> EnterTimerGuard {
+        let last_enter = Instant::now();
+        EnterTimerGuard {
+            interval,
+            last_enter,
+        }
+    }
+
+    pub fn enter(&mut self) -> bool {
+        if self.last_enter.elapsed() > self.interval {
+            self.last_enter = Instant::now();
+            return true;
+        }
+        false
+    }
+}
+
+
 
 #[derive(Parser, Debug, Clone)]
 pub struct ProgramArgs {

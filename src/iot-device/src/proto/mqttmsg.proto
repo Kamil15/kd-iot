@@ -16,7 +16,10 @@ message ServerMessage {
 }
 
 message IoTMessage {
-    string Body = 1;
+    string id_device = 1;
+    float temp = 2;
+    float hum = 3;
+    float pressure = 4;
 }
 
 message SampleMessage {

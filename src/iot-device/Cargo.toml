@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-aht20 = "0.1.0"
+embedded-aht20 = "0.1.1"
 bmp280 = "0.4.0"
 clap = { version = "4.4.10", features = ["derive"] }
 # embedded-graphics = "0.8.1"

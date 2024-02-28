@@ -15,9 +15,8 @@ pub mod proto;
 #[tokio::main]
 async fn main() {
     let args = ProgramArgs::parse();
-    //println!("{:?}", 2_000_000);
-    //let mut disp = SpiDisplay::new();
-    //disp.update(ResultTable::default());
-    functests::ssd1680_test();
-    loop {}
+    let mut init_engine = engine::engine::Engine::new(args);
+    init_engine.run().await;
+    //functests::embedded_aht20().await.unwrap();
+    //functests::test_i2c().await;
 }
