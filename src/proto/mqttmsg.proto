@@ -11,12 +11,15 @@ message ServerMessage {
     }
 
     Cmd CMD = 1;
-    optional string Body = 2;
+    string Body = 2;
     
 }
 
 message IoTMessage {
-    optional string Body = 1;
+    string id_device = 1;
+    float temp = 2;
+    float hum = 3;
+    float pressure = 4;
 }
 
 message SampleMessage {

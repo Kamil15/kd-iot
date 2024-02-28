@@ -23,4 +23,6 @@ var path = Environment.GetFolderPath(folder);
 
 Console.WriteLine($"{path}"); // /home/kamil/.local/share
 
+// var a = new MQQTMsg.Messages.IoTMessage {Temp = 42};
+
 app.Run();
