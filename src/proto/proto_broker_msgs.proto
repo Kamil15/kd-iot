@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package proto_broker_msgs;
+option csharp_namespace = "ProtoBrokerMsgs";
+
+message ServerMessage {
+    enum Cmd {
+        Check = 0;
+        Uncheck = 1;
+        Switch = 2;
+    }
+
+    Cmd CMD = 1;
+    string Body = 2;
+    
+}
+
+message IoTMessage {
+    string id_device = 1;
+    float temp = 2;
+    float hum = 3;
+    float pressure = 4;
+}
+
+message SampleMessage {
+  oneof test_oneof {
+    string name = 4;
+    string sub_message = 9;
+  }
+}

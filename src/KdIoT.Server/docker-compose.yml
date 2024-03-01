@@ -11,8 +11,22 @@ services:
       - 8883:8883
       - 1883:1883
       - 127.0.0.1:15672:15672
+  postgres:
+    image: docker.io/postgres:16-alpine
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=pass5
+      - POSTGRES_USER=kdiotserver
+      - POSTGRES_DB=kdiotserver_db
 
   iotserver:
     build: .
     depends_on:
       - rabbitmq
+      - postgres
+
+volumes:
+  postgres-data:

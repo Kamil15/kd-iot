@@ -1,11 +1,26 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using KdIoT.Server.Data;
+using KdIoT.Server.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KdIoT.Server.Controllers {
 
     [ApiController]
     [Route("[controller]")]
-    public class WeatherForecastController : ControllerBase {
+    public class IoTManagerController : ControllerBase {
+
+        private readonly AppDbContext _appDbContext;
+        private BrokerAccessService _brokerAccessService;
+
+        public IoTManagerController(AppDbContext appDbContext, BrokerAccessService brokerAccessService) {
+            _appDbContext = appDbContext;
+            _brokerAccessService = brokerAccessService;
+        }
+
+        [HttpGet]
+        public void SendSwitch() {
+            _brokerAccessService.SendMessage("air");
+        }
 
         public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary) {
             public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);

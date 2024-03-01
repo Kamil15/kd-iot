@@ -41,15 +41,16 @@ impl Engine {
             result_table,
         }
     }
-    async fn start_backgrund_tasks(&mut self) {
+    pub async fn start_backgrund_tasks(&mut self) {
         self.net_connector = Some(NetConnector::start_thread(self.args.clone()).await);
     }
 
     pub async fn run(&mut self) {
         let mut dht22_timer = EnterTimerGuard::new(Duration::from_secs(5));
-        let mut aht20_timer = EnterTimerGuard::new(Duration::from_secs(10));
+        let mut aht20_timer = EnterTimerGuard::new(Duration::from_secs(5));
         let mut bmp280_timer = EnterTimerGuard::new(Duration::from_secs(5));
         let mut print_timer = EnterTimerGuard::new(Duration::from_secs(5));
+        let mut send_timer = EnterTimerGuard::new(Duration::from_secs(16));
         
 
         loop {
@@ -70,9 +71,10 @@ impl Engine {
             if print_timer.enter() {
                 println!("{:?}", self.result_table);
             }
-            
-            
-            //self.net_connector.as_ref().unwrap().send_data(self.result_table.clone()).await;
+
+            if send_timer.enter() {
+                self.net_connector.as_ref().unwrap().send_data(self.result_table.clone()).await;
+            }
         }
     }
 

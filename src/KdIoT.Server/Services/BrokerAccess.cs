@@ -1,4 +1,5 @@
 using System.Text;
+using Google.Protobuf;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -42,7 +43,7 @@ namespace KdIoT.Server.Services {
 
             _consumer = new AsyncEventingBasicConsumer(_channel);
             _consumer.Received += MessageRecived;
-            _channel.QueueBind("ServerQueue", "amq.topic", "ServerRoute");
+            _channel.QueueBind("ServerQueue", "amq.topic", "iot.*.sendtoserver");
             _channel.BasicConsume(queue: "ServerQueue",
                                      autoAck: true,
                                      consumer: _consumer);
@@ -51,11 +52,24 @@ namespace KdIoT.Server.Services {
         }
 
         private async Task MessageRecived(object model, BasicDeliverEventArgs ea) {
-            
             var body = ea.Body.ToArray();
-            var message = Encoding.UTF8.GetString(body);
-            _logger.LogInformation($" [x] [Body:] {message}, [ea.DeliveryTag:] {ea.DeliveryTag}, [ea.ConsumerTag:] {ea.ConsumerTag}, [ea.Exchange:] {ea.Exchange}");
-            _logger.LogInformation($" [x] [ea.Redelivered:] {ea.Redelivered}, [ea.RoutingKey:] {ea.RoutingKey}, [ea.BasicProperties.UserId:] {ea.BasicProperties.ReplyTo}");
+            var message = ProtoBrokerMsgs.IoTMessage.Parser.ParseFrom(body);
+            _logger.LogInformation($" [x] [ea.DeliveryTag:] {ea.DeliveryTag}, [ea.ConsumerTag:] {ea.ConsumerTag}, [ea.Exchange:] {ea.Exchange}" +
+            $" [x] [ea.Redelivered:] {ea.Redelivered}, [ea.RoutingKey:] {ea.RoutingKey}, [ea.BasicProperties.UserId:] {ea.BasicProperties.ReplyTo}" +
+            $" [x] message.Pressure: {message.Pressure}, message.Humidity: {message.Humidity}, message.Temperature: {message.Temperature}");
+
+        }
+
+        public void SendMessage(string id_device) {
+            var message = new ProtoBrokerMsgs.ServerMessage {
+                Command = ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch,
+                Body = "text"
+                };
+            
+            _channel.BasicPublish(exchange: "amq.topic",
+                                routingKey: $"iot.{id_device}.receive",
+                                basicProperties: null,
+                                body: message.ToByteArray());
         }
 
         private async Task DoWork(CancellationToken stoppingToken) {

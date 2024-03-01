@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-  <Protobuf Include="..\proto\mqttmsg.proto" />
+  <Protobuf Include="Proto\proto_broker_msgs.proto" />
   </ItemGroup>
 
 </Project>

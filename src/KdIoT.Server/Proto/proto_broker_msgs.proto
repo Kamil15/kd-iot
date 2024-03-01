@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package mqttmsg.messages;
-option csharp_namespace = "MQQTMsg.Messages";
+package proto_broker_msgs;
+option csharp_namespace = "ProtoBrokerMsgs";
 
 message ServerMessage {
     enum Cmd {
@@ -10,15 +10,15 @@ message ServerMessage {
         Switch = 2;
     }
 
-    Cmd CMD = 1;
-    string Body = 2;
+    Cmd command = 1;
+    string body = 2;
     
 }
 
 message IoTMessage {
     string id_device = 1;
-    float temp = 2;
-    float hum = 3;
+    float temperature = 2;
+    float humidity = 3;
     float pressure = 4;
 }
 
