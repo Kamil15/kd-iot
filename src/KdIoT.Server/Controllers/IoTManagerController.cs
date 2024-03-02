@@ -19,7 +19,12 @@ namespace KdIoT.Server.Controllers {
 
         [HttpGet]
         public void SendSwitch() {
-            _brokerAccessService.SendMessage("air");
+            _brokerAccessService.SendSwitch("air");
+        }
+
+        [HttpGet]
+        public void SendGlobalSwitch() {
+            _brokerAccessService.SendGlobalSwitch();
         }
 
         public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary) {

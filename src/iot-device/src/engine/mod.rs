@@ -17,6 +17,8 @@ pub struct ResultTable {
 
     pub bmp280_temp: f32, //celsius
     pub bmp280_pressure: f32, //kpa
+
+    pub demo_switch: bool,
 }
 
 pub struct EnterTimerGuard {

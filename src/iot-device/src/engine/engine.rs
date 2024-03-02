@@ -3,13 +3,14 @@ use std::{borrow::BorrowMut, error::Error, time::Duration};
 use bmp280::Bmp280;
 use rppal::{gpio::Gpio, hal::Delay, i2c::I2c};
 
-use super::{net_connector::NetConnector, EnterTimerGuard, ProgramArgs, ResultTable};
+use super::{net_connector::NetConnector, spidisplay::{self, SpiDisplay}, EnterTimerGuard, ProgramArgs, ResultTable};
 
 pub struct Engine {
     args: ProgramArgs,
     dht22_fs_temp: String,
     dht22_fs_humidity: String,
     net_connector: Option<NetConnector>,
+    display: SpiDisplay,
     aht20: embedded_aht20::Aht20<I2c, Delay>,
     bmp280: Bmp280,
     result_table: ResultTable,
@@ -31,11 +32,14 @@ impl Engine {
             .build()
             .expect("Could not build device");
 
+        let display = SpiDisplay::new();
+
         Engine {
             args,
             dht22_fs_temp,
             dht22_fs_humidity,
             net_connector,
+            display,
             aht20,
             bmp280,
             result_table,
@@ -49,7 +53,9 @@ impl Engine {
         let mut dht22_timer = EnterTimerGuard::new(Duration::from_secs(5));
         let mut aht20_timer = EnterTimerGuard::new(Duration::from_secs(5));
         let mut bmp280_timer = EnterTimerGuard::new(Duration::from_secs(5));
-        let mut print_timer = EnterTimerGuard::new(Duration::from_secs(5));
+        let mut print_timer = EnterTimerGuard::new(Duration::from_secs(8));
+        let mut spidisplay_timer = EnterTimerGuard::new(Duration::from_secs(16));
+
         let mut send_timer = EnterTimerGuard::new(Duration::from_secs(16));
         
 
@@ -70,6 +76,10 @@ impl Engine {
 
             if print_timer.enter() {
                 println!("{:?}", self.result_table);
+            }
+
+            if spidisplay_timer.enter() {
+                self.display.update(self.result_table);
             }
 
             if send_timer.enter() {

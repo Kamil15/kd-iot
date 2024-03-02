@@ -60,7 +60,7 @@ namespace KdIoT.Server.Services {
 
         }
 
-        public void SendMessage(string id_device) {
+        public void SendSwitch(string id_device) {
             var message = new ProtoBrokerMsgs.ServerMessage {
                 Command = ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch,
                 Body = "text"
@@ -68,6 +68,18 @@ namespace KdIoT.Server.Services {
             
             _channel.BasicPublish(exchange: "amq.topic",
                                 routingKey: $"iot.{id_device}.receive",
+                                basicProperties: null,
+                                body: message.ToByteArray());
+        }
+
+        public void SendGlobalSwitch() {
+            var message = new ProtoBrokerMsgs.ServerMessage {
+                Command = ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch,
+                Body = "text"
+                };
+            
+            _channel.BasicPublish(exchange: "amq.topic",
+                                routingKey: $"iot.global",
                                 basicProperties: null,
                                 body: message.ToByteArray());
         }

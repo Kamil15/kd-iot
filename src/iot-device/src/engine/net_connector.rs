@@ -6,14 +6,14 @@ use rumqttc::{
 };
 use tokio::{sync::mpsc::Receiver, task::JoinHandle};
 
-use crate::proto::proto_broker_msgs;
+use crate::proto::proto_broker_msgs::{self, ServerMessage};
 
 use super::{ProgramArgs, ResultTable};
 
 pub struct NetConnector {
     thread_handle: JoinHandle<()>,
     pub client: AsyncClient,
-    pub receiver: Receiver<i32>,
+    pub receiver: Receiver<ServerMessage>,
     id_device: String,
     hostname: String,
 }
@@ -42,16 +42,27 @@ impl NetConnector {
             .await
             .unwrap();
 
-        let (ts, receiver) = tokio::sync::mpsc::channel::<i32>(5);
+        let (ts, receiver) = tokio::sync::mpsc::channel::<ServerMessage>(5);
 
         let thread_handle = tokio::spawn(async move {
             let sender = ts;
             loop {
                 let notification = connection.poll().await;
                 println!("Notification: {:?}", notification);
+                if let Err(_) = notification  {
+
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    continue;
+                }
+
                 if let Ok(Event::Incoming(Incoming::Publish(packet))) = notification {
                     println!("Incoming message!");
                     println!("{:?}", packet);
+
+                    if let Ok(res) = proto_broker_msgs::ServerMessage::decode(packet.payload.clone()) {
+                        println!("ServerMessage: {:?}", res);
+                        sender.send_timeout(res, Duration::from_secs(5)).await.unwrap();
+                    }
                 }
             }
         });
@@ -66,6 +77,7 @@ impl NetConnector {
     }
 
     pub async fn send_data(&self, result_table: ResultTable) {
+        println!("send_data");
         let message = proto_broker_msgs::IoTMessage {
             id_device: self.id_device.clone(),
             hum: result_table.aht20_humidity,

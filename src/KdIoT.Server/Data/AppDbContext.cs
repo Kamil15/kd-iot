@@ -1,5 +1,7 @@
+using System;
 using KdIoT.Server;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ValueGeneration;
 
 namespace KdIoT.Server.Data {
     public class AppDbContext : DbContext {
@@ -9,10 +11,13 @@ namespace KdIoT.Server.Data {
         //    => optionsBuilder.UseNpgsql("Host=my_host;Database=my_db;Username=my_user;Password=my_pw");
 
         public AppDbContext(DbContextOptions<AppDbContext> dbContextOptions) : base(dbContextOptions) {
-
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
+            modelBuilder
+                .Entity<Device>()
+                .Property(b => b.DeviceId)
+                .HasValueGenerator<GuidValueGenerator>();
             
         }
     }
@@ -27,7 +32,7 @@ namespace KdIoT.Server.Data {
     }
 
     public class Device {
-        public int DeviceId {get; set;}
+        public Guid DeviceId {get; set;}
         public string? DeviceName {get;set;}
 
         public ICollection<Telemetry> Telemetries {get; set;} = new List<Telemetry>();
