@@ -1,4 +1,5 @@
 syntax = "proto3";
+import "google/protobuf/timestamp.proto";
 
 package proto_broker_msgs;
 option csharp_namespace = "ProtoBrokerMsgs";
@@ -17,9 +18,12 @@ message ServerMessage {
 
 message IoTMessage {
     string id_device = 1;
+
     float temperature = 2;
     float humidity = 3;
     float pressure = 4;
+
+    google.protobuf.Timestamp timestamp = 5;
 }
 
 message SampleMessage {

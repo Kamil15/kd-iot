@@ -26,9 +26,12 @@ namespace KdIoT.Server.Data {
         public int TelemetryId {get; set;}
         public Device Device {get; set;} = null!;
 
-        public float Temperature;
-        public float Humidity;
-        public float Pressure;
+        public float Temperature {get; set;}
+        public float Humidity {get; set;}
+        public float Pressure {get; set;}
+
+        public DateTime SubmitedTime {get; set;}
+        public DateTime MeasuredTime {get; set;}
     }
 
     public class Device {

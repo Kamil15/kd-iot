@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace KdIoT.Server.Controllers {
 
     [ApiController]
-    [Route("[controller]")]
+    [Route("[controller]/[action]")]
     public class IoTManagerController : ControllerBase {
 
         private readonly AppDbContext _appDbContext;
@@ -18,7 +18,12 @@ namespace KdIoT.Server.Controllers {
         }
 
         [HttpGet]
-        public void SendSwitch() {
+        public void LastMeassure([FromBody] string deviceId) {
+            
+        }
+        
+        [HttpGet]
+        public void SendSwitch([FromBody] string deviceId) {
             _brokerAccessService.SendSwitch("air");
         }
 

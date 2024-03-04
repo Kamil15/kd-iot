@@ -9,9 +9,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
-builder.Services.AddHostedService<BrokerAccessService>();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddSingleton<BrokerAccessService>();
+builder.Services.AddHostedService<BrokerAccessService>(provider => provider.GetRequiredService<BrokerAccessService>());
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql("Host=postgres;Database=kdiotserver_db;Username=kdiotserver;Password=pass5"));
+
+builder.Services.AddSwaggerGen(c => {
+    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
+});
 
 var app = builder.Build();
 
@@ -32,10 +37,10 @@ using (var scope = app.Services.CreateScope()) {
 app.MapControllers();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment()) {
+//if (app.Environment.IsDevelopment()) {
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+//}
 
 var folder = Environment.SpecialFolder.LocalApplicationData;
 var path = Environment.GetFolderPath(folder);

@@ -58,6 +58,9 @@ namespace KdIoT.Server.Services {
             $" [x] [ea.Redelivered:] {ea.Redelivered}, [ea.RoutingKey:] {ea.RoutingKey}, [ea.BasicProperties.UserId:] {ea.BasicProperties.ReplyTo}" +
             $" [x] message.Pressure: {message.Pressure}, message.Humidity: {message.Humidity}, message.Temperature: {message.Temperature}");
 
+
+            
+
         }
 
         public void SendSwitch(string id_device) {

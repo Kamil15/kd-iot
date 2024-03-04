@@ -24,6 +24,8 @@ services:
 
   iotserver:
     build: .
+    ports:
+      - 8080:8080
     depends_on:
       - rabbitmq
       - postgres
