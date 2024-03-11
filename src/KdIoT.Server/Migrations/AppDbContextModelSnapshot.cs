@@ -29,6 +29,7 @@ namespace KdIoT.Server.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("DeviceName")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("DeviceId");
@@ -38,11 +39,11 @@ namespace KdIoT.Server.Migrations
 
             modelBuilder.Entity("KdIoT.Server.Data.Telemetry", b =>
                 {
-                    b.Property<int>("TelemetryId")
+                    b.Property<long>("TelemetryId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("bigint");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TelemetryId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("TelemetryId"));
 
                     b.Property<Guid>("DeviceId")
                         .HasColumnType("uuid");

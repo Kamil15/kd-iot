@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace KdIoT.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240304140323_init")]
+    [Migration("20240311200745_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -32,6 +32,7 @@ namespace KdIoT.Server.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("DeviceName")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("DeviceId");
@@ -41,11 +42,11 @@ namespace KdIoT.Server.Migrations
 
             modelBuilder.Entity("KdIoT.Server.Data.Telemetry", b =>
                 {
-                    b.Property<int>("TelemetryId")
+                    b.Property<long>("TelemetryId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("bigint");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TelemetryId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("TelemetryId"));
 
                     b.Property<Guid>("DeviceId")
                         .HasColumnType("uuid");

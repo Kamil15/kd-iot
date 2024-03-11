@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations.Schema;
 using KdIoT.Server;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
@@ -23,7 +24,8 @@ namespace KdIoT.Server.Data {
     }
 
     public class Telemetry {
-        public int TelemetryId {get; set;}
+
+        public Int64 TelemetryId {get; set;}
         public Device Device {get; set;} = null!;
 
         public float Temperature {get; set;}
@@ -36,7 +38,7 @@ namespace KdIoT.Server.Data {
 
     public class Device {
         public Guid DeviceId {get; set;}
-        public string? DeviceName {get;set;}
+        public string DeviceName {get;set;} = null!;
 
         public ICollection<Telemetry> Telemetries {get; set;} = new List<Telemetry>();
     }

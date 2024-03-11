@@ -17,7 +17,7 @@ namespace KdIoT.Server.Migrations
                 columns: table => new
                 {
                     DeviceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    DeviceName = table.Column<string>(type: "text", nullable: true)
+                    DeviceName = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -28,7 +28,7 @@ namespace KdIoT.Server.Migrations
                 name: "Telemetries",
                 columns: table => new
                 {
-                    TelemetryId = table.Column<int>(type: "integer", nullable: false)
+                    TelemetryId = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     DeviceId = table.Column<Guid>(type: "uuid", nullable: false),
                     Temperature = table.Column<float>(type: "real", nullable: false),

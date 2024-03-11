@@ -1,5 +1,7 @@
 using System.Text;
 using Google.Protobuf;
+using KdIoT.Server.Data;
+using Microsoft.EntityFrameworkCore;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -7,15 +9,19 @@ namespace KdIoT.Server.Services {
 
     public class BrokerAccessService : IHostedService, IDisposable {
         private readonly ILogger<BrokerAccessService> _logger;
-        ConnectionFactory? _factory;
-        IConnection _connection;
+        //private readonly AppDbContext _appDbContext;
+        private readonly IServiceProvider _provider;
+        ConnectionFactory _factory;
+        IConnection? _connection;
         IModel? _channel;
 
         CancellationTokenSource? _taskstoppingTokenSource;
         AsyncEventingBasicConsumer? _consumer;
 
-        public BrokerAccessService(ILogger<BrokerAccessService> logger) {
+        public BrokerAccessService(ILogger<BrokerAccessService> logger, IServiceProvider provider) {
             _logger = logger;
+            //_appDbContext = appDbContext;
+            _provider = provider;
             _factory = new ConnectionFactory {
                 HostName = "rabbitmq",
                 UserName = "theserver",
@@ -54,12 +60,34 @@ namespace KdIoT.Server.Services {
         private async Task MessageRecived(object model, BasicDeliverEventArgs ea) {
             var body = ea.Body.ToArray();
             var message = ProtoBrokerMsgs.IoTMessage.Parser.ParseFrom(body);
-            _logger.LogInformation($" [x] [ea.DeliveryTag:] {ea.DeliveryTag}, [ea.ConsumerTag:] {ea.ConsumerTag}, [ea.Exchange:] {ea.Exchange}" +
-            $" [x] [ea.Redelivered:] {ea.Redelivered}, [ea.RoutingKey:] {ea.RoutingKey}, [ea.BasicProperties.UserId:] {ea.BasicProperties.ReplyTo}" +
-            $" [x] message.Pressure: {message.Pressure}, message.Humidity: {message.Humidity}, message.Temperature: {message.Temperature}");
-
+            //_logger.LogInformation($" [x] [ea.DeliveryTag:] {ea.DeliveryTag}, [ea.ConsumerTag:] {ea.ConsumerTag}, [ea.Exchange:] {ea.Exchange}" +
+            //$" [x] [ea.Redelivered:] {ea.Redelivered}, [ea.RoutingKey:] {ea.RoutingKey}, [ea.BasicProperties.UserId:] {ea.BasicProperties.ReplyTo}" +
+            //$" [x] message.Pressure: {message.Pressure}, message.Humidity: {message.Humidity}, message.Temperature: {message.Temperature}");
 
             
+
+            var idDeviceFromRoutingKey = ea.RoutingKey.Split('.')[1];
+            if (!StringComparer.CurrentCultureIgnoreCase.Equals(idDeviceFromRoutingKey, message.IdDevice)) {
+                _logger.LogInformation(
+                    $"idDevice from RoutingKey and from Message are incorrect, idDeviceFromRoutingKey: {idDeviceFromRoutingKey} | message.IdDevice: {message.IdDevice}");
+                return;
+            }
+
+            using (var scope = _provider.CreateScope()) {
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var device = await dbContext.Devices.AsQueryable().FirstOrDefaultAsync(f => f.DeviceName.Equals(message.IdDevice.ToLower()));
+
+                if (device is null) {
+                    device = new Device { DeviceName = message.IdDevice.ToLower() };
+                    //await dbContext.Devices.AddAsync(device);
+                }
+
+                Telemetry tel = new Telemetry { Device = device };
+                await dbContext.Telemetries.AddAsync(tel);
+                await dbContext.SaveChangesAsync();
+                Console.WriteLine("Saved");
+            }
 
         }
 
@@ -67,8 +95,8 @@ namespace KdIoT.Server.Services {
             var message = new ProtoBrokerMsgs.ServerMessage {
                 Command = ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch,
                 Body = "text"
-                };
-            
+            };
+
             _channel.BasicPublish(exchange: "amq.topic",
                                 routingKey: $"iot.{id_device}.receive",
                                 basicProperties: null,
@@ -79,8 +107,8 @@ namespace KdIoT.Server.Services {
             var message = new ProtoBrokerMsgs.ServerMessage {
                 Command = ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch,
                 Body = "text"
-                };
-            
+            };
+
             _channel.BasicPublish(exchange: "amq.topic",
                                 routingKey: $"iot.global",
                                 basicProperties: null,

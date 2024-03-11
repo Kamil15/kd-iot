@@ -1,7 +1,9 @@
-﻿using KdIoT.Server.Data;
+﻿using Google.Protobuf;
+using KdIoT.Server.Data;
 using KdIoT.Server.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Namotion.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,9 +16,11 @@ builder.Services.AddSingleton<BrokerAccessService>();
 builder.Services.AddHostedService<BrokerAccessService>(provider => provider.GetRequiredService<BrokerAccessService>());
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql("Host=postgres;Database=kdiotserver_db;Username=kdiotserver;Password=pass5"));
 
-builder.Services.AddSwaggerGen(c => {
-    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
-});
+//builder.Services.AddSwaggerGen(c => {
+//    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
+//});
+
+builder.Services.AddOpenApiDocument();
 
 var app = builder.Build();
 
@@ -36,17 +40,14 @@ using (var scope = app.Services.CreateScope()) {
 
 app.MapControllers();
 
-// Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment()) {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-//}
+
+//if (app.Environment.IsDevelopment()) { }
+app.UseOpenApi();
+app.UseSwaggerUi();
 
 var folder = Environment.SpecialFolder.LocalApplicationData;
 var path = Environment.GetFolderPath(folder);
 
 Console.WriteLine($"{path}"); // /home/kamil/.local/share
-
-// var a = new MQQTMsg.Messages.IoTMessage {Temp = 42};
 
 app.Run();
