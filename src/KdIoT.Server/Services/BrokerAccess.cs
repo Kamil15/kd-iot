@@ -9,6 +9,8 @@ namespace KdIoT.Server.Services {
 
     public class BrokerAccessService : IHostedService, IDisposable {
         private readonly ILogger<BrokerAccessService> _logger;
+        private readonly IServiceScope _scope;
+
         //private readonly AppDbContext _appDbContext;
         private readonly IServiceProvider _provider;
         ConnectionFactory _factory;
@@ -93,20 +95,20 @@ namespace KdIoT.Server.Services {
 
         public void SendSwitch(string id_device) {
             var message = new ProtoBrokerMsgs.ServerMessage {
-                Command = ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch,
-                Body = "text"
+                Command = ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch
             };
 
+            var routingDeviceId = id_device.Replace(".", String.Empty).ToLower();
+
             _channel.BasicPublish(exchange: "amq.topic",
-                                routingKey: $"iot.{id_device}.receive",
+                                routingKey: $"iot.{routingDeviceId}.receive",
                                 basicProperties: null,
                                 body: message.ToByteArray());
         }
 
         public void SendGlobalSwitch() {
             var message = new ProtoBrokerMsgs.ServerMessage {
-                Command = ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch,
-                Body = "text"
+                Command = ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch
             };
 
             _channel.BasicPublish(exchange: "amq.topic",

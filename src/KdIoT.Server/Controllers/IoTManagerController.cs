@@ -19,18 +19,34 @@ namespace KdIoT.Server.Controllers {
         }
 
         [HttpGet]
-        public async Task<Telemetry> LastMeassure([FromBody] string deviceId) {
+        public async Task<Telemetry> LastMeassure([FromBody] string deviceName) {
             var result = await _appDbContext.Telemetries.AsQueryable()
+                .Where(c => c.Device.DeviceName.Equals(deviceName.ToLower()))
                 .OrderByDescending(c => c.MeasuredTime)
-                .ThenByDescending(c => c.SubmitedTime).FirstOrDefaultAsync();
+                .ThenByDescending(c => c.SubmitedTime)
+                .FirstOrDefaultAsync();
             
             
             return result!;
         }
+
+        [HttpGet]
+        public async Task<Telemetry> AverageMessureLastDay([FromBody] string deviceName) {
+            var now = DateTime.Now;
+            
+
+            var result = await _appDbContext.Telemetries.AsQueryable()
+                .Where(c => c.Device.DeviceName.Equals(deviceName.ToLower()))
+                .OrderByDescending(c => c.MeasuredTime)
+                .ThenByDescending(c => c.SubmitedTime)
+                .FirstOrDefaultAsync();
+
+            return result!;
+        }
         
         [HttpGet]
-        public void SendSwitch([FromBody] string deviceId) {
-            _brokerAccessService.SendSwitch("air");
+        public void SendSwitch([FromBody] string deviceName) {
+            _brokerAccessService.SendSwitch(deviceName.ToLower());
         }
 
         [HttpGet]
