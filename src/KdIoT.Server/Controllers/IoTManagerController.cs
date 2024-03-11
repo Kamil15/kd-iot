@@ -2,6 +2,7 @@
 using KdIoT.Server.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace KdIoT.Server.Controllers {
 
@@ -18,8 +19,13 @@ namespace KdIoT.Server.Controllers {
         }
 
         [HttpGet]
-        public void LastMeassure([FromBody] string deviceId) {
+        public async Task<Telemetry> LastMeassure([FromBody] string deviceId) {
+            var result = await _appDbContext.Telemetries.AsQueryable()
+                .OrderByDescending(c => c.MeasuredTime)
+                .ThenByDescending(c => c.SubmitedTime).FirstOrDefaultAsync();
             
+            
+            return result!;
         }
         
         [HttpGet]
@@ -31,6 +37,8 @@ namespace KdIoT.Server.Controllers {
         public void SendGlobalSwitch() {
             _brokerAccessService.SendGlobalSwitch();
         }
+
+        /////////----
 
         public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary) {
             public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);

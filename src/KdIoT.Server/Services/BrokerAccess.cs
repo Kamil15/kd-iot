@@ -18,9 +18,9 @@ namespace KdIoT.Server.Services {
         CancellationTokenSource? _taskstoppingTokenSource;
         AsyncEventingBasicConsumer? _consumer;
 
-        public BrokerAccessService(ILogger<BrokerAccessService> logger, IServiceProvider provider) {
+        public BrokerAccessService(ILogger<BrokerAccessService> logger, IServiceProvider provider, IServiceScope scope) {
             _logger = logger;
-            //_appDbContext = appDbContext;
+            _scope = scope;
             _provider = provider;
             _factory = new ConnectionFactory {
                 HostName = "rabbitmq",
@@ -73,21 +73,21 @@ namespace KdIoT.Server.Services {
                 return;
             }
 
-            using (var scope = _provider.CreateScope()) {
-                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            using var scope = _provider.CreateScope();
+            using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            
 
-                var device = await dbContext.Devices.AsQueryable().FirstOrDefaultAsync(f => f.DeviceName.Equals(message.IdDevice.ToLower()));
+            var device = await dbContext.Devices.AsQueryable().FirstOrDefaultAsync(f => f.DeviceName.Equals(message.IdDevice.ToLower()));
 
-                if (device is null) {
-                    device = new Device { DeviceName = message.IdDevice.ToLower() };
-                    //await dbContext.Devices.AddAsync(device);
-                }
-
-                Telemetry tel = new Telemetry { Device = device };
-                await dbContext.Telemetries.AddAsync(tel);
-                await dbContext.SaveChangesAsync();
-                Console.WriteLine("Saved");
+            if (device is null) {
+                device = new Device { DeviceName = message.IdDevice.ToLower() };
+                //await dbContext.Devices.AddAsync(device);
             }
+
+            Telemetry tel = new Telemetry { Device = device };
+            await dbContext.Telemetries.AddAsync(tel);
+            await dbContext.SaveChangesAsync();
+            Console.WriteLine("Saved");
 
         }
 
