@@ -12,7 +12,7 @@ message ServerMessage {
     }
 
     Cmd command = 1;
-    optional string body = 2;
+    string body = 2;
     
 }
 

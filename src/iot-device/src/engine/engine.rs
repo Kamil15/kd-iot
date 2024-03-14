@@ -85,6 +85,29 @@ impl Engine {
             if send_timer.enter() {
                 self.net_connector.as_ref().unwrap().send_data(self.result_table.clone()).await;
             }
+
+            //check messages from MQTT
+            self.handle_recv();
+        }
+    }
+
+    //check messages from MQTT
+    fn handle_recv(&mut self) {
+        match(self.net_connector.as_mut().unwrap().receiver.try_recv()) {
+            Ok(res) => {
+                match res.command() {
+                    crate::proto::proto_broker_msgs::server_message::Cmd::Check => self.result_table.demo_switch = true,
+                    crate::proto::proto_broker_msgs::server_message::Cmd::Uncheck => self.result_table.demo_switch = false,
+                    crate::proto::proto_broker_msgs::server_message::Cmd::Switch => self.result_table.demo_switch = !self.result_table.demo_switch,
+                };
+                
+            },
+            Err(err) => {
+                match err {
+                    tokio::sync::mpsc::error::TryRecvError::Disconnected => panic!("mpsc with the net_connector thread has been disconnected"),
+                    _ => {},
+                }
+            }
         }
     }
 

@@ -465,6 +465,7 @@ dependencies = [
  "embedded-graphics",
  "prost",
  "prost-build",
+ "prost-types",
  "rppal",
  "rumqttc",
  "sh1106",

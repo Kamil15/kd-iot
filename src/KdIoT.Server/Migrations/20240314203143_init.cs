@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using NodaTime;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -34,8 +35,8 @@ namespace KdIoT.Server.Migrations
                     Temperature = table.Column<float>(type: "real", nullable: false),
                     Humidity = table.Column<float>(type: "real", nullable: false),
                     Pressure = table.Column<float>(type: "real", nullable: false),
-                    SubmitedTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    MeasuredTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    SubmitedTime = table.Column<Instant>(type: "timestamp with time zone", nullable: false),
+                    MeasuredTime = table.Column<Instant>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {

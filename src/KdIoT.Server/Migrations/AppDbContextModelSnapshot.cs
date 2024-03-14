@@ -4,6 +4,7 @@ using KdIoT.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using NodaTime;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -51,13 +52,13 @@ namespace KdIoT.Server.Migrations
                     b.Property<float>("Humidity")
                         .HasColumnType("real");
 
-                    b.Property<DateTime>("MeasuredTime")
+                    b.Property<Instant>("MeasuredTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<float>("Pressure")
                         .HasColumnType("real");
 
-                    b.Property<DateTime>("SubmitedTime")
+                    b.Property<Instant>("SubmitedTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<float>("Temperature")

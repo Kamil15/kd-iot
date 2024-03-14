@@ -1,6 +1,7 @@
-use std::{fs, time::Duration};
+use std::{fs, time::{Duration, SystemTime}};
 
 use prost::Message;
+use prost_types::Timestamp;
 use rumqttc::{
     AsyncClient, Event, EventLoop, Incoming, MqttOptions, QoS, TlsConfiguration, Transport,
 };
@@ -78,18 +79,23 @@ impl NetConnector {
 
     pub async fn send_data(&self, result_table: ResultTable) {
         println!("send_data");
+        
         let message = proto_broker_msgs::IoTMessage {
             id_device: self.id_device.clone(),
-            hum: result_table.aht20_humidity,
+            humidity: result_table.aht20_humidity,
             pressure: result_table.bmp280_pressure,
-            temp: result_table.aht20_temp,
+            temperature: result_table.aht20_temp,
+            timestamp: Some(SystemTime::now().into()),
         };
         let body = message.encode_to_vec();
         let topic = format!("iot/{}/sendtoserver", self.id_device);
-        self.client
-            .publish(topic, QoS::AtLeastOnce, false, body)
-            .await
-            .unwrap();
+
+        let publish_result = self.client
+            .try_publish(topic, QoS::AtLeastOnce, false, body);
+
+        if let Err(error) = publish_result {
+            println!("{:?}", error);
+        }
     }
 
     pub fn stop(self) {

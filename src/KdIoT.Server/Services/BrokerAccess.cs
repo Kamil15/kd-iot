@@ -2,6 +2,8 @@ using System.Text;
 using Google.Protobuf;
 using KdIoT.Server.Data;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
+using NodaTime.Extensions;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -9,7 +11,7 @@ namespace KdIoT.Server.Services {
 
     public class BrokerAccessService : IHostedService, IDisposable {
         private readonly ILogger<BrokerAccessService> _logger;
-        private readonly IServiceScope _scope;
+        private readonly SystemStatusService _systemStatusService;
 
         //private readonly AppDbContext _appDbContext;
         private readonly IServiceProvider _provider;
@@ -20,9 +22,9 @@ namespace KdIoT.Server.Services {
         CancellationTokenSource? _taskstoppingTokenSource;
         AsyncEventingBasicConsumer? _consumer;
 
-        public BrokerAccessService(ILogger<BrokerAccessService> logger, IServiceProvider provider, IServiceScope scope) {
+        public BrokerAccessService(ILogger<BrokerAccessService> logger, SystemStatusService systemStatusService, IServiceProvider provider) {
             _logger = logger;
-            _scope = scope;
+            _systemStatusService = systemStatusService;
             _provider = provider;
             _factory = new ConnectionFactory {
                 HostName = "rabbitmq",
@@ -66,7 +68,7 @@ namespace KdIoT.Server.Services {
             //$" [x] [ea.Redelivered:] {ea.Redelivered}, [ea.RoutingKey:] {ea.RoutingKey}, [ea.BasicProperties.UserId:] {ea.BasicProperties.ReplyTo}" +
             //$" [x] message.Pressure: {message.Pressure}, message.Humidity: {message.Humidity}, message.Temperature: {message.Temperature}");
 
-            
+
 
             var idDeviceFromRoutingKey = ea.RoutingKey.Split('.')[1];
             if (!StringComparer.CurrentCultureIgnoreCase.Equals(idDeviceFromRoutingKey, message.IdDevice)) {
@@ -77,7 +79,7 @@ namespace KdIoT.Server.Services {
 
             using var scope = _provider.CreateScope();
             using var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            
+
 
             var device = await dbContext.Devices.AsQueryable().FirstOrDefaultAsync(f => f.DeviceName.Equals(message.IdDevice.ToLower()));
 
@@ -86,10 +88,21 @@ namespace KdIoT.Server.Services {
                 //await dbContext.Devices.AddAsync(device);
             }
 
-            Telemetry tel = new Telemetry { Device = device };
-            await dbContext.Telemetries.AddAsync(tel);
+            Telemetry Telemetry = new Telemetry {
+                Device = device,
+                Humidity = message.Humidity,
+                Temperature = message.Temperature,
+                Pressure = message.Pressure,
+                MeasuredTime = message.Timestamp.ToDateTime().ToInstant(),
+                SubmitedTime = SystemClock.Instance.GetCurrentInstant(),
+            };
+
+
+            await dbContext.Telemetries.AddAsync(Telemetry);
             await dbContext.SaveChangesAsync();
             Console.WriteLine("Saved");
+
+            _systemStatusService.UpdateLastSeen(message.IdDevice.ToLower(), DateTime.Now);
 
         }
 

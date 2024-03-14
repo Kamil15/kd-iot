@@ -4,6 +4,8 @@ using KdIoT.Server.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Namotion.Reflection;
+using NodaTime;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,9 +14,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
 
+builder.Services.AddSingleton<SystemStatusService>();
 builder.Services.AddSingleton<BrokerAccessService>();
 builder.Services.AddHostedService<BrokerAccessService>(provider => provider.GetRequiredService<BrokerAccessService>());
-builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql("Host=postgres;Database=kdiotserver_db;Username=kdiotserver;Password=pass5"));
+
+///Database PostgreSQL
+// Call UseNodaTime() when building your data source:
+var dataSourceBuilder = new NpgsqlDataSourceBuilder("Host=postgres;Database=kdiotserver_db;Username=kdiotserver;Password=pass5");
+dataSourceBuilder.UseNodaTime();
+var dataSource = dataSourceBuilder.Build();
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(dataSource, o => o.UseNodaTime()));
+
 
 //builder.Services.AddSwaggerGen(c => {
 //    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
@@ -44,6 +56,9 @@ app.MapControllers();
 //if (app.Environment.IsDevelopment()) { }
 app.UseOpenApi();
 app.UseSwaggerUi();
+
+
+//var a = new ProtoBrokerMsgs.ServerMessage {};
 
 var folder = Environment.SpecialFolder.LocalApplicationData;
 var path = Environment.GetFolderPath(folder);

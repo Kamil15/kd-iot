@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using KdIoT.Server;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
+using NodaTime;
 
 namespace KdIoT.Server.Data {
     public class AppDbContext : DbContext {
@@ -12,6 +13,7 @@ namespace KdIoT.Server.Data {
         //    => optionsBuilder.UseNpgsql("Host=my_host;Database=my_db;Username=my_user;Password=my_pw");
 
         public AppDbContext(DbContextOptions<AppDbContext> dbContextOptions) : base(dbContextOptions) {
+            
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
@@ -32,8 +34,8 @@ namespace KdIoT.Server.Data {
         public float Humidity {get; set;}
         public float Pressure {get; set;}
 
-        public DateTime SubmitedTime {get; set;}
-        public DateTime MeasuredTime {get; set;}
+        public Instant SubmitedTime {get; set;}
+        public Instant MeasuredTime {get; set;}
     }
 
     public class Device {
