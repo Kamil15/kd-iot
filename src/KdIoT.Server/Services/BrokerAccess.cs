@@ -97,10 +97,9 @@ namespace KdIoT.Server.Services {
                 SubmitedTime = SystemClock.Instance.GetCurrentInstant(),
             };
 
-
+            
             await dbContext.Telemetries.AddAsync(Telemetry);
             await dbContext.SaveChangesAsync();
-            Console.WriteLine("Saved");
 
             _systemStatusService.UpdateLastSeen(message.IdDevice.ToLower(), DateTime.Now);
 

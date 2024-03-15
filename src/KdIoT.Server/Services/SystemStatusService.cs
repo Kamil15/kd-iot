@@ -19,10 +19,10 @@ namespace KdIoT.Server.Services {
             return DeviceAcitvity.GetValueOrDefault(device).LastSeen;
         }
 
-        public List<(string, DateTime)> GetAllLastSeen() {
-            List<(string, DateTime)> returnList = new();
+        public Dictionary<string, DateTime> GetAllLastSeen() {
+            Dictionary<string, DateTime> returnList = new();
             foreach(var item in DeviceAcitvity) {
-                returnList.Add((item.Key, item.Value.LastSeen));
+                returnList.Add(item.Key, item.Value.LastSeen);
             }
 
             return returnList;

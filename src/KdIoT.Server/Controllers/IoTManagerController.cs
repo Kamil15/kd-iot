@@ -4,7 +4,10 @@ using KdIoT.Server.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
 using NodaTime.Extensions;
+using System.Web;
+using System.Net;
 
 namespace KdIoT.Server.Controllers {
 
@@ -22,8 +25,10 @@ namespace KdIoT.Server.Controllers {
             _systemStatusService = systemStatusService;
         }
 
+
         [HttpGet]
-        public async Task<Telemetry> LastMeassure([FromQuery] string deviceName) {
+        [ProducesResponseType(typeof(TelemetryDto), StatusCodes.Status200OK)]
+        public async Task<IActionResult> LastMeassure([FromQuery] string deviceName) {
             var result = await _appDbContext.Telemetries.AsQueryable()
                 .Include(x => x.Device)
                 .Where(c => c.Device.DeviceName.Equals(deviceName.ToLower()))
@@ -31,14 +36,17 @@ namespace KdIoT.Server.Controllers {
                 .ThenByDescending(c => c.SubmitedTime)
                 .FirstOrDefaultAsync();
             
+            if(result is null)
+                return NoContent();
             
-            return result!;
+            
+            return Ok(new TelemetryDto(result.Temperature, result.Pressure, result.Humidity, result.SubmitedTime.ToDateTimeUtc(), result.MeasuredTime.ToDateTimeUtc()));
         }
 
         [HttpGet]
-        public async Task<List<Telemetry>> LastDayMeassure([FromQuery] string deviceName) {
-            var now = DateTime.Now;
-            var toLastDay = now.Subtract(TimeSpan.FromDays(1)).ToInstant();
+        public async Task<IEnumerable<TelemetryDto>> LastDayMeassure([FromQuery] string deviceName) {
+            var now = SystemClock.Instance.GetCurrentInstant();
+            var toLastDay = now.Minus(Duration.FromDays(1));
             
 
             var result = await _appDbContext.Telemetries.AsQueryable()
@@ -49,13 +57,14 @@ namespace KdIoT.Server.Controllers {
                 .ThenByDescending(c => c.SubmitedTime)
                 .ToListAsync();
 
-            return result!;
+            var response = result.Select(s => new TelemetryDto(s.Temperature, s.Humidity, s.Pressure, s.SubmitedTime.ToDateTimeUtc(), s.MeasuredTime.ToDateTimeUtc()));
+            return response;
         }
 
         [HttpGet]
-        public async Task<string> LastDayAverageMeassure([FromQuery] string deviceName) {
-            var now = DateTime.Now;
-            var toLastDay = now.Subtract(TimeSpan.FromDays(1)).ToInstant();
+        public async Task<IActionResult> LastDayAverageMeassure([FromQuery] string deviceName) {
+            var now = SystemClock.Instance.GetCurrentInstant();
+            var toLastDay = now.Minus(Duration.FromDays(1));
             
             //FromSql($"SELECT AVG(Temperature), AVG(Humidity), AVG(Pressure) FROM Telemetries LEFT JOIN Devices ON Telemetries.Device = Devices.DeviceId
             // WHERE Devices.DeviceName = {deviceName} AND Telemetries.MeasuredTime...")
@@ -64,22 +73,20 @@ namespace KdIoT.Server.Controllers {
                 .Include(x => x.Device)
                 .Where(c => c.Device.DeviceName.Equals(deviceName.ToLower()))
                 .Where(c => c.MeasuredTime > toLastDay)
-                .GroupBy(c => c)
-                .Select(g => new {Humidity = g.Average(c => c.Humidity), Pressure = g.Average(c => c.Pressure), Temperature = g.Average(c => c.Temperature)})
+                .GroupBy(c => c.Device)
+                .Select(g => new {Temperature = g.Average(c => c.Temperature), Humidity = g.Average(c => c.Humidity), Pressure = g.Average(c => c.Pressure)})
                 .ToListAsync();
 
-            
 
-            //var a = from p in _appDbContext.Telemetries
-            //select new {};
-
-            return JsonSerializer.Serialize(result);
+            return Ok(result);
         }
 
+
         [HttpGet]
-        public string DeviceActivityTable() {
-            List<(string, DateTime)> table = _systemStatusService.GetAllLastSeen();
-            return JsonSerializer.Serialize(table);
+        [ProducesResponseType(typeof(Dictionary<string, DateTime>), StatusCodes.Status200OK)]
+        public IActionResult DeviceActivityTable() {
+            Dictionary<string, DateTime> table = _systemStatusService.GetAllLastSeen();
+            return Ok(table);
         }
 
 
@@ -118,7 +125,8 @@ namespace KdIoT.Server.Controllers {
                 ))
                 .ToArray();
             return forecast;
-
         }
+
+        public record struct TelemetryDto(float Temperature, float Humidity, float Pressure, DateTime SubmitedTime, DateTime MeasuredTime);
     }
 }

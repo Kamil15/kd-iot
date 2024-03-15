@@ -94,7 +94,7 @@ impl NetConnector {
             .try_publish(topic, QoS::AtLeastOnce, false, body);
 
         if let Err(error) = publish_result {
-            println!("{:?}", error);
+            println!("try_publish: {:?}", error);
         }
     }
 
