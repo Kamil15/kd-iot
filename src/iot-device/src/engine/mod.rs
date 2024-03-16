@@ -54,4 +54,9 @@ pub struct ProgramArgs {
     pub hostname_mqqt: String,
     #[arg(short, long, default_value_t = 1883)]
     pub port_mqqt: u16,
+
+    #[arg(long, default_value = "theserver")]
+    pub username_mqqt: String,
+    #[arg(long, default_value = "myserverpass")]
+    pub password_mqqt: String,
 }

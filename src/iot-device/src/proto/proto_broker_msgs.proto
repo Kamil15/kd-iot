@@ -12,11 +12,10 @@ message ServerMessage {
     }
 
     Cmd command = 1;
-    string body = 2;
     
 }
 
-message IoTMessage {
+message TelemetryMessage {
     string id_device = 1;
 
     float temperature = 2;
@@ -24,6 +23,11 @@ message IoTMessage {
     float pressure = 4;
 
     google.protobuf.Timestamp timestamp = 5;
+}
+
+message ActivityMesssage {
+    string id_device = 1;
+    bool optional_state = 2;
 }
 
 message SampleMessage {

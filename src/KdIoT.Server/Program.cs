@@ -58,7 +58,8 @@ app.UseOpenApi();
 app.UseSwaggerUi();
 
 
-//var a = new ProtoBrokerMsgs.ServerMessage {};
+var a = new ProtoBrokerMsgs.ServerMessage {};
+//var b = new ProtoBrokerMsgs.SampleMessage {};
 
 var folder = Environment.SpecialFolder.LocalApplicationData;
 var path = Environment.GetFolderPath(folder);

@@ -20,7 +20,8 @@ namespace KdIoT.Server.Services {
         IModel? _channel;
 
         CancellationTokenSource? _taskstoppingTokenSource;
-        AsyncEventingBasicConsumer? _consumer;
+        AsyncEventingBasicConsumer? _consumerTelemetry;
+        AsyncEventingBasicConsumer? _consumerActivity;
 
         public BrokerAccessService(ILogger<BrokerAccessService> logger, SystemStatusService systemStatusService, IServiceProvider provider) {
             _logger = logger;
@@ -45,25 +46,38 @@ namespace KdIoT.Server.Services {
             _connection = _factory.CreateConnection();
             _channel = _connection.CreateModel();
 
-            _channel.QueueDeclare(queue: "ServerQueue",
+            _channel.QueueDeclare(queue: "ServerQueueTelemetry",
+                     durable: false,
+                     exclusive: false,
+                     autoDelete: false,
+                     arguments: null);
+            
+            _channel.QueueDeclare(queue: "ServerQueueActivity",
                      durable: false,
                      exclusive: false,
                      autoDelete: false,
                      arguments: null);
 
-            _consumer = new AsyncEventingBasicConsumer(_channel);
-            _consumer.Received += MessageRecived;
-            _channel.QueueBind("ServerQueue", "amq.topic", "iot.*.sendtoserver");
-            _channel.BasicConsume(queue: "ServerQueue",
+            _consumerTelemetry = new AsyncEventingBasicConsumer(_channel);
+            _consumerTelemetry.Received += TelemetryMessageRecived;
+            _channel.QueueBind("ServerQueue", "amq.topic", "iotserver.*.sendtelemetry");
+            _channel.BasicConsume(queue: "ServerQueueTelemetry",
                                      autoAck: true,
-                                     consumer: _consumer);
+                                     consumer: _consumerTelemetry);
+
+            _consumerActivity = new AsyncEventingBasicConsumer(_channel);
+            _consumerActivity.Received += ActivityMessageRecived;
+            _channel.QueueBind("ServerQueue", "amq.topic", "iotserver.*.sendactivity");
+            _channel.BasicConsume(queue: "ServerQueueActivity",
+                                     autoAck: true,
+                                     consumer: _consumerActivity);
 
             var task = Task.Run(async () => await DoWork(_taskstoppingTokenSource.Token).ConfigureAwait(false)).ConfigureAwait(false);
         }
 
-        private async Task MessageRecived(object model, BasicDeliverEventArgs ea) {
+        private async Task TelemetryMessageRecived(object model, BasicDeliverEventArgs ea) {
             var body = ea.Body.ToArray();
-            var message = ProtoBrokerMsgs.IoTMessage.Parser.ParseFrom(body);
+            var message = ProtoBrokerMsgs.TelemetryMessage.Parser.ParseFrom(body);
             //_logger.LogInformation($" [x] [ea.DeliveryTag:] {ea.DeliveryTag}, [ea.ConsumerTag:] {ea.ConsumerTag}, [ea.Exchange:] {ea.Exchange}" +
             //$" [x] [ea.Redelivered:] {ea.Redelivered}, [ea.RoutingKey:] {ea.RoutingKey}, [ea.BasicProperties.UserId:] {ea.BasicProperties.ReplyTo}" +
             //$" [x] message.Pressure: {message.Pressure}, message.Humidity: {message.Humidity}, message.Temperature: {message.Temperature}");
@@ -103,6 +117,21 @@ namespace KdIoT.Server.Services {
 
             _systemStatusService.UpdateLastSeen(message.IdDevice.ToLower(), DateTime.Now);
 
+        }
+
+        private async Task ActivityMessageRecived(object model, BasicDeliverEventArgs ea) {
+            var body = ea.Body.ToArray();
+            var message = ProtoBrokerMsgs.ActivityMesssage.Parser.ParseFrom(body);
+            var idDeviceFromRoutingKey = ea.RoutingKey.Split('.')[1];
+            if (!StringComparer.CurrentCultureIgnoreCase.Equals(idDeviceFromRoutingKey, message.IdDevice)) {
+                _logger.LogInformation(
+                    $"idDevice from RoutingKey and from Message are incorrect, idDeviceFromRoutingKey: {idDeviceFromRoutingKey} | message.IdDevice: {message.IdDevice}");
+                return;
+            }
+
+            await Task.Yield(); //just to surpass some warring
+
+            _systemStatusService.UpdateLastSeen(message.IdDevice.ToLower(), DateTime.Now);
         }
 
         public void SendSwitch(string id_device) {

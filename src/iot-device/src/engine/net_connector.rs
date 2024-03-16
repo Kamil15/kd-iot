@@ -16,7 +16,6 @@ pub struct NetConnector {
     pub client: AsyncClient,
     pub receiver: Receiver<ServerMessage>,
     id_device: String,
-    hostname: String,
 }
 
 impl NetConnector {
@@ -24,15 +23,17 @@ impl NetConnector {
         println!("Start thread, args: {:?}", args);
         let id_device = args.id_device.clone();
         let hostname = args.hostname_mqqt.clone();
+        let username = args.username_mqqt.clone();
+        let password = args.password_mqqt.clone();
 
         let mut mqttoptions = MqttOptions::new(id_device.clone(), hostname.clone(), args.port_mqqt);
 
-        mqttoptions.set_credentials("theserver", "myserverpass");
+        mqttoptions.set_credentials(username, password);
         mqttoptions
             .set_keep_alive(Duration::from_secs(5))
             .set_pending_throttle(Duration::from_secs(2));
 
-        let (client, mut connection) = AsyncClient::new(mqttoptions, 10);
+        let (client, mut connection) = AsyncClient::new(mqttoptions, 5);
 
         client
             .subscribe(format!("iot/{}/receive", id_device), QoS::AtMostOnce)
@@ -73,14 +74,13 @@ impl NetConnector {
             client,
             receiver,
             id_device,
-            hostname,
         }
     }
 
     pub async fn send_data(&self, result_table: ResultTable) {
         println!("send_data");
         
-        let message = proto_broker_msgs::IoTMessage {
+        let message = proto_broker_msgs::TelemetryMessage {
             id_device: self.id_device.clone(),
             humidity: result_table.aht20_humidity,
             pressure: result_table.bmp280_pressure,
@@ -88,7 +88,7 @@ impl NetConnector {
             timestamp: Some(SystemTime::now().into()),
         };
         let body = message.encode_to_vec();
-        let topic = format!("iot/{}/sendtoserver", self.id_device);
+        let topic = format!("iotserver/{}/sendtelemetry", self.id_device);
 
         let publish_result = self.client
             .try_publish(topic, QoS::AtLeastOnce, false, body);
@@ -105,6 +105,8 @@ impl NetConnector {
     }
 }
 
+
+#[allow(dead_code)]
 fn set_cert(mut mqttoptions: MqttOptions) -> MqttOptions {
     let ca: Vec<u8> =
         fs::read("ca_certificate.pem").expect("Something went wrong reading certificate!");
