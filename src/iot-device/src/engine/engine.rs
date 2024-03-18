@@ -3,7 +3,11 @@ use std::{borrow::BorrowMut, error::Error, time::Duration};
 use bmp280::Bmp280;
 use rppal::{gpio::Gpio, hal::Delay, i2c::I2c};
 
-use super::{net_connector::NetConnector, spidisplay::{self, SpiDisplay}, EnterTimerGuard, ProgramArgs, ResultTable};
+use super::{
+    net_connector::{NetConnector, NetConnectorSettings},
+    spidisplay::{self, SpiDisplay},
+    EnterTimerGuard, ProgramArgs, ResultTable,
+};
 
 pub struct Engine {
     args: ProgramArgs,
@@ -25,7 +29,9 @@ impl Engine {
         let result_table = ResultTable::default();
 
         let i2c = rppal::i2c::I2c::new().unwrap();
-        let aht20 = embedded_aht20::Aht20::new(i2c, embedded_aht20::DEFAULT_I2C_ADDRESS, rppal::hal::Delay).unwrap();
+        let aht20 =
+            embedded_aht20::Aht20::new(i2c, embedded_aht20::DEFAULT_I2C_ADDRESS, rppal::hal::Delay)
+                .unwrap();
         let bmp280 = bmp280::Bmp280Builder::new()
             .address(0x77) // Optional
             .path("/dev/i2c-1") // Optional
@@ -46,7 +52,20 @@ impl Engine {
         }
     }
     pub async fn start_backgrund_tasks(&mut self) {
-        self.net_connector = Some(NetConnector::start_thread(self.args.clone()).await);
+        let settings = NetConnectorSettings::new(
+            self.args.id_device.clone(),
+            self.args.hostname_mqqt.clone(),
+            self.args.port_mqqt,
+            self.args
+                .username_mqqt
+                .clone()
+                .unwrap_or("theserver".to_string()),
+            self.args
+                .password_mqqt
+                .clone()
+                .unwrap_or("myserverpass".to_string()),
+        );
+        self.net_connector = Some(NetConnector::start_thread(settings).await);
     }
 
     pub async fn run(&mut self) {
@@ -57,7 +76,6 @@ impl Engine {
         let mut spidisplay_timer = EnterTimerGuard::new(Duration::from_secs(16));
 
         let mut send_timer = EnterTimerGuard::new(Duration::from_secs(16));
-        
 
         loop {
             tokio::time::sleep(Duration::from_secs(2)).await; //temp
@@ -83,7 +101,11 @@ impl Engine {
             }
 
             if send_timer.enter() {
-                self.net_connector.as_ref().unwrap().send_data(self.result_table.clone()).await;
+                self.net_connector
+                    .as_ref()
+                    .unwrap()
+                    .send_data(self.result_table.clone())
+                    .await;
             }
 
             //check messages from MQTT
@@ -93,21 +115,26 @@ impl Engine {
 
     //check messages from MQTT
     fn handle_recv(&mut self) {
-        match(self.net_connector.as_mut().unwrap().receiver.try_recv()) {
+        match (self.net_connector.as_mut().unwrap().receiver.try_recv()) {
             Ok(res) => {
                 match res.command() {
-                    crate::proto::proto_broker_msgs::server_message::Cmd::Check => self.result_table.demo_switch = true,
-                    crate::proto::proto_broker_msgs::server_message::Cmd::Uncheck => self.result_table.demo_switch = false,
-                    crate::proto::proto_broker_msgs::server_message::Cmd::Switch => self.result_table.demo_switch = !self.result_table.demo_switch,
+                    crate::proto::proto_broker_msgs::server_message::Cmd::Check => {
+                        self.result_table.demo_switch = true
+                    }
+                    crate::proto::proto_broker_msgs::server_message::Cmd::Uncheck => {
+                        self.result_table.demo_switch = false
+                    }
+                    crate::proto::proto_broker_msgs::server_message::Cmd::Switch => {
+                        self.result_table.demo_switch = !self.result_table.demo_switch
+                    }
                 };
-                
-            },
-            Err(err) => {
-                match err {
-                    tokio::sync::mpsc::error::TryRecvError::Disconnected => panic!("mpsc with the net_connector thread has been disconnected"),
-                    _ => {},
-                }
             }
+            Err(err) => match err {
+                tokio::sync::mpsc::error::TryRecvError::Disconnected => {
+                    panic!("mpsc with the net_connector thread has been disconnected")
+                }
+                _ => {}
+            },
         }
     }
 

@@ -60,14 +60,14 @@ namespace KdIoT.Server.Services {
 
             _consumerTelemetry = new AsyncEventingBasicConsumer(_channel);
             _consumerTelemetry.Received += TelemetryMessageRecived;
-            _channel.QueueBind("ServerQueue", "amq.topic", "iotserver.*.sendtelemetry");
+            _channel.QueueBind("ServerQueueTelemetry", "amq.topic", "iotserver.*.sendtelemetry");
             _channel.BasicConsume(queue: "ServerQueueTelemetry",
                                      autoAck: true,
                                      consumer: _consumerTelemetry);
 
             _consumerActivity = new AsyncEventingBasicConsumer(_channel);
             _consumerActivity.Received += ActivityMessageRecived;
-            _channel.QueueBind("ServerQueue", "amq.topic", "iotserver.*.sendactivity");
+            _channel.QueueBind("ServerQueueActivity", "amq.topic", "iotserver.*.sendactivity");
             _channel.BasicConsume(queue: "ServerQueueActivity",
                                      autoAck: true,
                                      consumer: _consumerActivity);

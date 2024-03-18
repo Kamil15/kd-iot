@@ -12,7 +12,7 @@ using System.Net;
 namespace KdIoT.Server.Controllers {
 
     [ApiController]
-    [Route("api/[controller]/[action]")]
+    [Route("api")]
     public class IoTManagerController : ControllerBase {
 
         private readonly AppDbContext _appDbContext;
@@ -26,9 +26,9 @@ namespace KdIoT.Server.Controllers {
         }
 
 
-        [HttpGet]
+        [HttpGet("device/{deviceName}/[action]")]
         [ProducesResponseType(typeof(TelemetryDto), StatusCodes.Status200OK)]
-        public async Task<IActionResult> LastMeassure([FromQuery] string deviceName) {
+        public async Task<IActionResult> LastMeassure([FromRoute] string deviceName) {
             var result = await _appDbContext.Telemetries.AsQueryable()
                 .Include(x => x.Device)
                 .Where(c => c.Device.DeviceName.Equals(deviceName.ToLower()))
@@ -43,26 +43,8 @@ namespace KdIoT.Server.Controllers {
             return Ok(new TelemetryDto(result.Temperature, result.Pressure, result.Humidity, result.SubmitedTime.ToDateTimeUtc(), result.MeasuredTime.ToDateTimeUtc()));
         }
 
-        [HttpGet]
-        public async Task<IEnumerable<TelemetryDto>> LastDayMeassure([FromQuery] string deviceName) {
-            var now = SystemClock.Instance.GetCurrentInstant();
-            var toLastDay = now.Minus(Duration.FromDays(1));
-            
-
-            var result = await _appDbContext.Telemetries.AsQueryable()
-                .Include(x => x.Device)
-                .Where(c => c.Device.DeviceName.Equals(deviceName.ToLower()))
-                .Where(c => c.MeasuredTime > toLastDay)
-                .OrderByDescending(c => c.MeasuredTime)
-                .ThenByDescending(c => c.SubmitedTime)
-                .ToListAsync();
-
-            var response = result.Select(s => new TelemetryDto(s.Temperature, s.Humidity, s.Pressure, s.SubmitedTime.ToDateTimeUtc(), s.MeasuredTime.ToDateTimeUtc()));
-            return response;
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> LastDayAverageMeassure([FromQuery] string deviceName) {
+        [HttpGet("device/{deviceName}/[action]")]
+        public async Task<IActionResult> LastDayAverageMeassure([FromRoute] string deviceName) {
             var now = SystemClock.Instance.GetCurrentInstant();
             var toLastDay = now.Minus(Duration.FromDays(1));
             
@@ -82,7 +64,25 @@ namespace KdIoT.Server.Controllers {
         }
 
 
-        [HttpGet]
+        [HttpGet("device/{deviceName}/[action]")]
+        public async Task<IEnumerable<TelemetryDto>> LastDayMeassures([FromRoute] string deviceName) {
+            var now = SystemClock.Instance.GetCurrentInstant();
+            var toLastDay = now.Minus(Duration.FromDays(1));
+            
+
+            var result = await _appDbContext.Telemetries.AsQueryable()
+                .Include(x => x.Device)
+                .Where(c => c.Device.DeviceName.Equals(deviceName.ToLower()))
+                .Where(c => c.MeasuredTime > toLastDay)
+                .OrderByDescending(c => c.MeasuredTime)
+                .ThenByDescending(c => c.SubmitedTime)
+                .ToListAsync();
+
+            var response = result.Select(s => new TelemetryDto(s.Temperature, s.Humidity, s.Pressure, s.SubmitedTime.ToDateTimeUtc(), s.MeasuredTime.ToDateTimeUtc()));
+            return response;
+        }
+
+        [HttpGet("[action]")]
         [ProducesResponseType(typeof(Dictionary<string, DateTime>), StatusCodes.Status200OK)]
         public IActionResult DeviceActivityTable() {
             Dictionary<string, DateTime> table = _systemStatusService.GetAllLastSeen();
@@ -90,16 +90,14 @@ namespace KdIoT.Server.Controllers {
         }
 
 
-
-
         /////////----
         
-        [HttpGet]
-        public void SendSwitch([FromQuery] string deviceName) {
+        [HttpGet("device/{deviceName}/[action]")]
+        public void SendSwitch([FromRoute] string deviceName) {
             _brokerAccessService.SendSwitch(deviceName.ToLower());
         }
 
-        [HttpGet]
+        [HttpGet("[action]")]
         public void SendGlobalSwitch() {
             _brokerAccessService.SendGlobalSwitch();
         }
@@ -114,7 +112,7 @@ namespace KdIoT.Server.Controllers {
             "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
         };
 
-        [HttpGet]
+        [HttpGet("[action]")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public WeatherForecast[] GetTheThing() {
             var forecast = Enumerable.Range(1, 5).Select(index =>

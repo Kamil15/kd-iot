@@ -6,7 +6,7 @@ use reqwest::Url;
 use rumqttc::{AsyncClient, Event, Incoming, MqttOptions, QoS};
 use tokio;
 
-use crate::proto::proto_broker_msgs::ServerMessage;
+use crate::proto::proto_broker_msgs::{self, ServerMessage};
 
 mod proto;
 
@@ -31,10 +31,10 @@ enum Commands {
         #[arg(short, long)]
         hostname: String,
 
-        #[arg(long, default_value = "theserver")]
-        username: String,
-        #[arg(long, default_value = "myserverpass")]
-        password: String,
+        #[arg(long)]
+        username: Option<String>,
+        #[arg(long)]
+        password: Option<String>,
     },
     DisplayActivity {
         #[arg(short, long)]
@@ -71,7 +71,7 @@ async fn iotdev(
     id_device: String,
     hostname: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    println!("Start thread, args: {:?}", args);
+    println!("Starting thread, args: {:?}", args);
 
     let mut mqttoptions = MqttOptions::new(id_device.clone(), hostname.clone(), 1883);
 
@@ -80,20 +80,10 @@ async fn iotdev(
         .set_keep_alive(Duration::from_secs(5))
         .set_pending_throttle(Duration::from_secs(2));
 
-    let (client, mut connection) = AsyncClient::new(mqttoptions, 5);
-
-    client
-        .subscribe(format!("iot/{}/receive", id_device), QoS::AtMostOnce)
-        .await
-        .unwrap();
-    client
-        .subscribe("iot/global", QoS::AtMostOnce)
-        .await
-        .unwrap();
-
+    let (client, mut connection) = AsyncClient::new(mqttoptions, 0);
     let (ts, mut receiver) = tokio::sync::mpsc::channel::<ServerMessage>(5);
 
-    let thread_handle = tokio::spawn(async move {
+    let _ = tokio::spawn(async move {
         let sender = ts;
         loop {
             let notification = connection.poll().await;
@@ -108,18 +98,30 @@ async fn iotdev(
                 println!("{:?}", packet);
 
                 if let Ok(res) = ServerMessage::decode(packet.payload.clone()) {
-                    println!("ServerMessage: {:?}", res);
-                    sender
-                        .send_timeout(res, Duration::from_secs(5))
-                        .await
-                        .unwrap();
+                    println!("Received ServerMessage: {:?}", res);
                 }
             }
         }
     });
 
+    client
+        .subscribe(format!("iot/{}/receive", id_device), QoS::AtMostOnce)
+        .await
+        .unwrap();
+    client
+        .subscribe("iot/global", QoS::AtMostOnce)
+        .await
+        .unwrap();
+
     loop {
-        let data = receiver.recv().await;
-        println!("Recv: {:?}", data);
+        let message = proto_broker_msgs::ActivityMesssage {
+            id_device: id_device.clone(),
+            optional_state: true,
+        };
+        let payload = message.encode_to_vec();
+        let topic = format!("iotserver/{}/sendactivity", id_device);
+
+        let _ = client.publish(topic, QoS::AtMostOnce, false, payload).await;
+        tokio::time::sleep(Duration::from_secs(5)).await;
     }
 }

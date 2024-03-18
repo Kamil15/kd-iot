@@ -51,17 +51,17 @@ namespace KdIoT.Server.Data {
 
     public class Blog {
         public int BlogId { get; set; }
-        public string Url { get; set; }
+        public string Url { get; set; } = null!;
 
-        public List<Post> Posts { get; set; }
+        public List<Post> Posts { get; set; } = null!;
     }
 
     public class Post {
         public int PostId { get; set; }
-        public string Title { get; set; }
-        public string Content { get; set; }
+        public string Title { get; set; } = null!;
+        public string Content { get; set; }  = null!;
 
         public int BlogId { get; set; }
-        public Blog Blog { get; set; }
+        public Blog Blog { get; set; } = null!;
     }
 }

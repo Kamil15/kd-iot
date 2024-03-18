@@ -64,6 +64,6 @@ var a = new ProtoBrokerMsgs.ServerMessage {};
 var folder = Environment.SpecialFolder.LocalApplicationData;
 var path = Environment.GetFolderPath(folder);
 
-Console.WriteLine($"{path}"); // /home/kamil/.local/share
+Console.WriteLine($"{path}"); // /home/{user}/.local/share
 
 app.Run();

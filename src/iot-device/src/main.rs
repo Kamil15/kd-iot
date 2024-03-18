@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use clap::{Parser, arg};
 
-use engine::ProgramArgs;
+use engine::{net_connector::NetConnectorSettings, ProgramArgs};
 
 use crate::engine::ResultTable;
 
@@ -19,6 +19,7 @@ async fn main() {
     init_engine.start_backgrund_tasks().await;
     init_engine.run().await;
 
+    
     
     //functests::embedded_aht20().await.unwrap();
     //functests::test_i2c().await;
