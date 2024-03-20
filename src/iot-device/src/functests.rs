@@ -78,9 +78,9 @@ pub fn ssd1680_test() {
     display_bw.set_rotation(ssd1680::graphics::DisplayRotation::Rotate270);
 
 
-    let text = "a".encode_utf16();
+    //let text = "a".encode_utf16();
 
-    draw_text(&mut display_bw, "Test Pierwotny.", 0, 0);
+    //draw_text(&mut display_bw, "Test Pierwotny.", 0, 0);
     
 
     ssd1680.update_bw_frame(&mut spi, display_bw.buffer()).unwrap();

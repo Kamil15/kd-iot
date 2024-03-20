@@ -33,7 +33,7 @@ impl NetConnector {
 
         let mut mqttoptions = MqttOptions::new(
             settings.id_device.clone(),
-            settings.hostname.clone(),
+            settings.host.clone(),
             settings.port,
         );
 
@@ -56,7 +56,7 @@ impl NetConnector {
                 println!("Notification: {:?}", notification);
                 match notification {
                     Err(_) => {
-                        //tokio::time::sleep(Duration::from_secs(5)).await;
+                        tokio::time::sleep(Duration::from_secs(5)).await;
                         continue;
                     }
                     //If the connection is successful but there is no existing session
@@ -64,8 +64,8 @@ impl NetConnector {
                         session_present: false,
                         code: ConnectReturnCode::Success,
                     }))) => {
-                        //register publish, because there is no existing session
-                        register_publish(client.clone(), settings.id_device.clone());
+                        //register subscribe, because there is no existing session
+                        register_subscribe(client.clone(), settings.id_device.clone());
                     }
                     Ok(Event::Incoming(Incoming::Publish(packet))) => {
                         println!("Incoming message!");
@@ -86,7 +86,7 @@ impl NetConnector {
             }
         });
 
-        register_publish(client.clone(), settings.id_device.clone());
+        //register_subscribe(client.clone(), settings.id_device.clone());
 
         NetConnector {
             thread_handle,
@@ -126,7 +126,7 @@ impl NetConnector {
 }
 
 //in the new task because it can block if the inner receiver is full, making it a problem if this function has been used in main loop
-fn register_publish(client: AsyncClient, id_device: String) {
+fn register_subscribe(client: AsyncClient, id_device: String) {
     task::spawn(async move {
         client
             .subscribe(format!("iot/{}/receive", id_device), QoS::AtMostOnce)
@@ -142,7 +142,7 @@ fn register_publish(client: AsyncClient, id_device: String) {
 #[derive(Debug, Clone)]
 pub struct NetConnectorSettings {
     pub id_device: String,
-    pub hostname: String,
+    pub host: String,
     pub port: u16,
     pub username: String,
     pub password: String,
@@ -151,14 +151,14 @@ pub struct NetConnectorSettings {
 impl NetConnectorSettings {
     pub fn new(
         id_device: String,
-        hostname: String,
+        host: String,
         port: u16,
         username: String,
         password: String,
     ) -> NetConnectorSettings {
         NetConnectorSettings {
             id_device,
-            hostname,
+            host,
             port,
             username,
             password,

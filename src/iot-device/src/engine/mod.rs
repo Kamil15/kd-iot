@@ -51,7 +51,7 @@ pub struct ProgramArgs {
     #[arg(short, long, default_value = "air")]
     pub id_device: String,
     #[arg(long, default_value = "localhost")]
-    pub hostname_mqqt: String,
+    pub host_mqqt: String,
     #[arg(short, long, default_value_t = 1883)]
     pub port_mqqt: u16,
 

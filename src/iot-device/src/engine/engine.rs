@@ -54,7 +54,7 @@ impl Engine {
     pub async fn start_backgrund_tasks(&mut self) {
         let settings = NetConnectorSettings::new(
             self.args.id_device.clone(),
-            self.args.hostname_mqqt.clone(),
+            self.args.host_mqqt.clone(),
             self.args.port_mqqt,
             self.args
                 .username_mqqt

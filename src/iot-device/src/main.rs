@@ -18,6 +18,7 @@ async fn main() {
     let mut init_engine = engine::engine::Engine::new(args);
     init_engine.start_backgrund_tasks().await;
     init_engine.run().await;
+    //functests::ssd1680_test();
 
     
     
