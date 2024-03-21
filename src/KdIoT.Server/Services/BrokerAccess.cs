@@ -134,9 +134,16 @@ namespace KdIoT.Server.Services {
             _systemStatusService.UpdateLastSeen(message.IdDevice.ToLower(), DateTime.Now);
         }
 
-        public void SendSwitch(string id_device) {
+        public void SendSwitch(string id_device, SwitchStates state) {
+            var typestate = state switch {
+                SwitchStates.Switch => ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch,
+                SwitchStates.Check => ProtoBrokerMsgs.ServerMessage.Types.Cmd.Check,
+                SwitchStates.Uncheck => ProtoBrokerMsgs.ServerMessage.Types.Cmd.Uncheck,
+                _ => ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch,
+            };
+
             var message = new ProtoBrokerMsgs.ServerMessage {
-                Command = ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch
+                Command = typestate
             };
 
             var routingDeviceId = id_device.Replace(".", String.Empty).ToLower();
@@ -147,9 +154,16 @@ namespace KdIoT.Server.Services {
                                 body: message.ToByteArray());
         }
 
-        public void SendGlobalSwitch() {
+        public void SendGlobalSwitch(SwitchStates state) {
+            var typestate = state switch {
+                SwitchStates.Switch => ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch,
+                SwitchStates.Check => ProtoBrokerMsgs.ServerMessage.Types.Cmd.Check,
+                SwitchStates.Uncheck => ProtoBrokerMsgs.ServerMessage.Types.Cmd.Uncheck,
+                _ => ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch,
+            };
+
             var message = new ProtoBrokerMsgs.ServerMessage {
-                Command = ProtoBrokerMsgs.ServerMessage.Types.Cmd.Switch
+                Command = typestate
             };
 
             _channel.BasicPublish(exchange: "amq.topic",
@@ -175,6 +189,13 @@ namespace KdIoT.Server.Services {
             _connection?.Dispose();
             _channel?.Dispose();
             _taskstoppingTokenSource?.Dispose();
+        }
+
+
+        public enum SwitchStates {
+            Switch,
+            Check,
+            Uncheck
         }
     }
 

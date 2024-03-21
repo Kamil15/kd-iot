@@ -61,7 +61,7 @@ impl SpiDisplay {
         };
 
         let _ = egcircle!(
-            center = (100, 90),
+            center = (125, 90),
             radius = 20,
             style = style_demo,
         ).draw(&mut display_bw);

@@ -3,7 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use chrono::{DurationRound, NaiveDateTime, SubsecRound};
+use chrono::{serde, DurationRound, NaiveDateTime, SubsecRound};
 use clap::{Parser, Subcommand};
 use comfy_table::Table;
 use prost::Message;
@@ -48,6 +48,16 @@ enum Commands {
         #[arg(long)]
         hostname: String,
     },
+    AverageMeasure {
+        #[arg(short, long)]
+        id_device: String,
+        #[arg(long)]
+        hostname: String,
+        #[arg(short, long)]
+        from_date: String,
+        #[arg(short, long)]
+        to_date: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -63,11 +73,12 @@ async fn main() {
         } => iotdev(args, id_device, hostname, duration, password, username)
             .await
             .unwrap(),
-        Commands::DisplayActivity { hostname } => displayactitvity(args, hostname).await.unwrap(),
+        Commands::DisplayActivity { hostname } => displayactitvity(hostname).await.unwrap(),
+        Commands::AverageMeasure { id_device, hostname, from_date, to_date } => display_average_measure(id_device, hostname, from_date, to_date).await.unwrap(),
     }
 }
 
-async fn displayactitvity(args: Cli, hostname: String) -> Result<(), Box<dyn std::error::Error>> {
+async fn displayactitvity(hostname: String) -> Result<(), Box<dyn std::error::Error>> {
     let url = Url::parse(&format!("{}/api/DeviceActivityTable", hostname)).unwrap();
 
     let resp = reqwest::get(url)
@@ -89,6 +100,29 @@ async fn displayactitvity(args: Cli, hostname: String) -> Result<(), Box<dyn std
     }
 
     println!("{table}");
+
+    Ok(())
+}
+
+async fn display_average_measure(id_device: String, hostname: String, from_date: String, to_date: Option<String>) -> Result<(), Box<dyn std::error::Error>>{
+    //parse user input as weak
+    let from_date = humantime::parse_rfc3339_weak(&from_date).expect("wrong from_date");
+    let to_date = humantime::parse_rfc3339_weak(&to_date.unwrap_or(chrono::Utc::now().to_rfc3339())).expect("wrong to_date");
+
+    //format back to rfc...
+    let from_date = humantime::format_rfc3339(from_date);
+    let to_date = humantime::format_rfc3339(to_date);
+
+    let mut url = Url::parse(&format!("{}/api/device/{id_device}/AverageMeasureFromToDate", hostname)).unwrap();
+    url.query_pairs_mut().append_pair("from", &from_date.to_string());
+    url.query_pairs_mut().append_pair("to", &to_date.to_string());
+
+    let resp = reqwest::get(url)
+        .await?
+        .text()
+        .await?;
+
+    println!("{resp}");    
 
     Ok(())
 }
@@ -154,7 +188,8 @@ async fn iotdev(
         let payload = proto_broker_msgs::ActivityMesssage {
             id_device: id_device.clone(),
             optional_state: true,
-        }.encode_to_vec();
+        }
+        .encode_to_vec();
         let topic = format!("iotserver/{}/sendactivity", id_device);
 
         let _ = client.publish(topic, QoS::AtMostOnce, false, payload).await;

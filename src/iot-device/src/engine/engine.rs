@@ -96,6 +96,9 @@ impl Engine {
                 println!("{:?}", self.result_table);
             }
 
+            //check messages from MQTT
+            self.handle_recv(&mut spidisplay_timer);
+
             if spidisplay_timer.enter() {
                 self.display.update(self.result_table);
             }
@@ -107,15 +110,12 @@ impl Engine {
                     .send_data(self.result_table.clone())
                     .await;
             }
-
-            //check messages from MQTT
-            self.handle_recv();
         }
     }
 
     //check messages from MQTT
-    fn handle_recv(&mut self) {
-        match (self.net_connector.as_mut().unwrap().receiver.try_recv()) {
+    fn handle_recv(&mut self, display_timer: &mut EnterTimerGuard) {
+        match self.net_connector.as_mut().unwrap().receiver.try_recv() {
             Ok(res) => {
                 match res.command() {
                     crate::proto::proto_broker_msgs::server_message::Cmd::Check => {
@@ -128,6 +128,7 @@ impl Engine {
                         self.result_table.demo_switch = !self.result_table.demo_switch
                     }
                 };
+                display_timer.force_next_enter();
             }
             Err(err) => match err {
                 tokio::sync::mpsc::error::TryRecvError::Disconnected => {

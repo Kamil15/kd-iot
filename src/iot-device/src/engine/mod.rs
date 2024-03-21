@@ -24,23 +24,36 @@ pub struct ResultTable {
 pub struct EnterTimerGuard {
     interval: Duration,
     last_enter: Instant,
+    state: EnterTimerGuardState,
+}
+
+#[derive(PartialEq, Eq)]
+enum EnterTimerGuardState {
+    Default,
+    ForceNextEnter,
 }
 
 impl EnterTimerGuard {
     pub fn new(interval: Duration) -> EnterTimerGuard {
         let last_enter = Instant::now();
+        let state = EnterTimerGuardState::Default;
         EnterTimerGuard {
             interval,
             last_enter,
+            state
         }
     }
 
     pub fn enter(&mut self) -> bool {
-        if self.last_enter.elapsed() > self.interval {
+        if (self.last_enter.elapsed() > self.interval) || (self.state == EnterTimerGuardState::ForceNextEnter) {
             self.last_enter = Instant::now();
+            self.state = EnterTimerGuardState::Default;
             return true;
         }
         false
+    }
+    pub fn force_next_enter(&mut self) {
+        self.state = EnterTimerGuardState::ForceNextEnter;
     }
 }
 

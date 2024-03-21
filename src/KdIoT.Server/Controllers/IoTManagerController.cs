@@ -28,7 +28,7 @@ namespace KdIoT.Server.Controllers {
 
         [HttpGet("device/{deviceName}/[action]")]
         [ProducesResponseType(typeof(TelemetryDto), StatusCodes.Status200OK)]
-        public async Task<IActionResult> LastMeassure([FromRoute] string deviceName) {
+        public async Task<IActionResult> LastMeasure([FromRoute] string deviceName) {
             var result = await _appDbContext.Telemetries.AsQueryable()
                 .Include(x => x.Device)
                 .Where(c => c.Device.DeviceName.Equals(deviceName.ToLower()))
@@ -39,12 +39,31 @@ namespace KdIoT.Server.Controllers {
             if(result is null)
                 return NoContent();
             
-            
-            return Ok(new TelemetryDto(result.Temperature, result.Pressure, result.Humidity, result.SubmitedTime.ToDateTimeUtc(), result.MeasuredTime.ToDateTimeUtc()));
+            //return Ok(new {result.Temperature, result.Pressure, result.Humidity, submit = result.SubmitedTime.InUtc().ToString(), measured = result.MeasuredTime.InUtc().ToString()});
+            return Ok(new TelemetryDto(result.Temperature, result.Humidity, result.Pressure, result.SubmitedTime.ToDateTimeUtc(), result.MeasuredTime.ToDateTimeUtc()));
         }
 
         [HttpGet("device/{deviceName}/[action]")]
-        public async Task<IActionResult> LastDayAverageMeassure([FromRoute] string deviceName) {
+        [ProducesResponseType(typeof(IEnumerable<TelemetryDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> LastDayMeasures([FromRoute] string deviceName) {
+            var now = SystemClock.Instance.GetCurrentInstant();
+            var toLastDay = now.Minus(Duration.FromDays(1));
+            
+
+            var result = await _appDbContext.Telemetries.AsQueryable()
+                .Include(x => x.Device)
+                .Where(c => c.Device.DeviceName.Equals(deviceName.ToLower()))
+                .Where(c => c.MeasuredTime >= toLastDay)
+                .OrderByDescending(c => c.MeasuredTime)
+                .ThenByDescending(c => c.SubmitedTime)
+                .ToListAsync();
+
+            var response = result.Select(s => new TelemetryDto(s.Temperature, s.Humidity, s.Pressure, s.SubmitedTime.ToDateTimeUtc(), s.MeasuredTime.ToDateTimeUtc()));
+            return Ok(response);
+        }
+
+        [HttpGet("device/{deviceName}/[action]")]
+        public async Task<IActionResult> LastDayAverageMeasure([FromRoute] string deviceName) {
             var now = SystemClock.Instance.GetCurrentInstant();
             var toLastDay = now.Minus(Duration.FromDays(1));
             
@@ -54,7 +73,7 @@ namespace KdIoT.Server.Controllers {
             var result = await _appDbContext.Telemetries.AsQueryable()
                 .Include(x => x.Device)
                 .Where(c => c.Device.DeviceName.Equals(deviceName.ToLower()))
-                .Where(c => c.MeasuredTime > toLastDay)
+                .Where(c => c.MeasuredTime >= toLastDay)
                 .GroupBy(c => c.Device)
                 .Select(g => new {Temperature = g.Average(c => c.Temperature), Humidity = g.Average(c => c.Humidity), Pressure = g.Average(c => c.Pressure)})
                 .ToListAsync();
@@ -63,23 +82,65 @@ namespace KdIoT.Server.Controllers {
             return Ok(result);
         }
 
-
         [HttpGet("device/{deviceName}/[action]")]
-        public async Task<IEnumerable<TelemetryDto>> LastDayMeassures([FromRoute] string deviceName) {
+        public async Task<IActionResult> LastAverageMeasure([FromRoute] string deviceName, [FromQuery] long seconds) {
             var now = SystemClock.Instance.GetCurrentInstant();
-            var toLastDay = now.Minus(Duration.FromDays(1));
+            var toLastDay = now.Minus(Duration.FromSeconds(seconds));
             
+            //FromSql($"SELECT AVG(Temperature), AVG(Humidity), AVG(Pressure) FROM Telemetries LEFT JOIN Devices ON Telemetries.Device = Devices.DeviceId
+            // WHERE Devices.DeviceName = {deviceName} AND Telemetries.MeasuredTime...")
 
             var result = await _appDbContext.Telemetries.AsQueryable()
                 .Include(x => x.Device)
                 .Where(c => c.Device.DeviceName.Equals(deviceName.ToLower()))
-                .Where(c => c.MeasuredTime > toLastDay)
-                .OrderByDescending(c => c.MeasuredTime)
-                .ThenByDescending(c => c.SubmitedTime)
+                .Where(c => c.MeasuredTime >= toLastDay)
+                .GroupBy(c => c.Device)
+                .Select(g => new {Temperature = g.Average(c => c.Temperature), Humidity = g.Average(c => c.Humidity), Pressure = g.Average(c => c.Pressure)})
                 .ToListAsync();
 
-            var response = result.Select(s => new TelemetryDto(s.Temperature, s.Humidity, s.Pressure, s.SubmitedTime.ToDateTimeUtc(), s.MeasuredTime.ToDateTimeUtc()));
-            return response;
+
+            return Ok(result);
+        }
+
+        [HttpGet("device/{deviceName}/[action]")]
+        public async Task<IActionResult> AverageMeasureFromDate([FromRoute] string deviceName, [FromQuery] DateTime from) {
+            var now = SystemClock.Instance.GetCurrentInstant();
+            var fromLastDate = now.Minus(now - from.ToInstant());
+
+            //FromSql($"SELECT AVG(Temperature), AVG(Humidity), AVG(Pressure) FROM Telemetries LEFT JOIN Devices ON Telemetries.Device = Devices.DeviceId
+            // WHERE Devices.DeviceName = {deviceName} AND Telemetries.MeasuredTime...")
+
+            var result = await _appDbContext.Telemetries.AsQueryable()
+                .Include(x => x.Device)
+                .Where(c => c.Device.DeviceName.Equals(deviceName.ToLower()))
+                .Where(c => c.MeasuredTime >= fromLastDate)
+                .GroupBy(c => c.Device)
+                .Select(g => new {Temperature = g.Average(c => c.Temperature), Humidity = g.Average(c => c.Humidity), Pressure = g.Average(c => c.Pressure)})
+                .ToListAsync();
+
+
+            return Ok(result);
+        }
+
+        [HttpGet("device/{deviceName}/[action]")]
+        public async Task<IActionResult> AverageMeasureFromToDate([FromRoute] string deviceName, [FromQuery] DateTime from, [FromQuery] DateTime to) {
+            var toDate = to.ToInstant();
+            var fromLastDate = from.ToInstant();
+
+            //FromSql($"SELECT AVG(Temperature), AVG(Humidity), AVG(Pressure) FROM Telemetries LEFT JOIN Devices ON Telemetries.Device = Devices.DeviceId
+            // WHERE Devices.DeviceName = {deviceName} AND Telemetries.MeasuredTime...")
+
+            var result = await _appDbContext.Telemetries.AsQueryable()
+                .Include(x => x.Device)
+                .Where(c => c.Device.DeviceName.Equals(deviceName.ToLower()))
+                .Where(c =>  c.MeasuredTime >= fromLastDate)
+                .Where(c =>  c.MeasuredTime <= toDate)
+                .GroupBy(c => c.Device)
+                .Select(g => new {Temperature = g.Average(c => c.Temperature), Humidity = g.Average(c => c.Humidity), Pressure = g.Average(c => c.Pressure)})
+                .FirstOrDefaultAsync();
+
+
+            return Ok(result);
         }
 
         [HttpGet("[action]")]
@@ -93,38 +154,14 @@ namespace KdIoT.Server.Controllers {
         /////////----
         
         [HttpGet("device/{deviceName}/[action]")]
-        public void SendSwitch([FromRoute] string deviceName) {
-            _brokerAccessService.SendSwitch(deviceName.ToLower());
+        public void SendSwitch([FromRoute] string deviceName, [FromQuery] BrokerAccessService.SwitchStates state = BrokerAccessService.SwitchStates.Switch) {
+            _brokerAccessService.SendSwitch(deviceName.ToLower(), state);
         }
 
         [HttpGet("[action]")]
-        public void SendGlobalSwitch() {
-            _brokerAccessService.SendGlobalSwitch();
+        public void SendGlobalSwitch([FromQuery] BrokerAccessService.SwitchStates state = BrokerAccessService.SwitchStates.Switch) {
+            _brokerAccessService.SendGlobalSwitch(state);
         }
-
-        /////////----
-
-        public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary) {
-            public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-        }
-
-        string[] summaries = new[] {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
-
-        [HttpGet("[action]")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public WeatherForecast[] GetTheThing() {
-            var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast(
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-                .ToArray();
-            return forecast;
-        }
-
         public record struct TelemetryDto(float Temperature, float Humidity, float Pressure, DateTime SubmitedTime, DateTime MeasuredTime);
     }
 }

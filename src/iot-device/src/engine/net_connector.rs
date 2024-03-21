@@ -125,7 +125,7 @@ impl NetConnector {
     }
 }
 
-//in the new task because it can block if the inner receiver is full, making it a problem if this function has been used in main loop
+//in the new task because it can block if the inner receiver is full, making it a problem if this function has been used in the main loop
 fn register_subscribe(client: AsyncClient, id_device: String) {
     task::spawn(async move {
         client
